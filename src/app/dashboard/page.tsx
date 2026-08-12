@@ -5,7 +5,13 @@ import { prisma } from "@/lib/prisma";
 // Router halaman dashboard — arahkan ke halaman ringkasan yang sesuai per tipeMitra
 export default async function DashboardPage() {
   const session = await auth();
-  if (!session?.user?.mitraId) redirect("/login");
+  if (!session?.user) redirect("/login");
+
+  if (session.user.role === "admin_platform") {
+    redirect("/dashboard/platform");
+  }
+
+  if (!session.user.mitraId) redirect("/login");
 
   const mitra = await prisma.mitra.findUnique({
     where: { id: session.user.mitraId },

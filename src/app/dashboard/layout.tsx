@@ -19,6 +19,7 @@ type SidebarProps = {
 };
 
 function Sidebar({ role, tipeMitra, namaUtama, namaSubtitle, kode, tokenApi }: SidebarProps) {
+  const isPlatform = role === "admin_platform";
   const isCabang = role === "admin_cabang";
   const isLokaID = tipeMitra === "lokaid";
 
@@ -27,7 +28,7 @@ function Sidebar({ role, tipeMitra, namaUtama, namaSubtitle, kode, tokenApi }: S
       <div className="mb-8">
         <p className="font-mono text-xs uppercase tracking-[0.28em] text-sidebar-foreground/70">Identiva</p>
         <h2 className="mt-2 font-display text-2xl font-semibold">
-          {isCabang ? "Dashboard Cabang" : isLokaID ? "Dashboard LokaID" : "Dashboard"}
+          {isPlatform ? "Dashboard Platform" : isCabang ? "Dashboard Cabang" : isLokaID ? "Dashboard LokaID" : "Dashboard"}
         </h2>
         <p className="mt-1 text-sm text-sidebar-foreground/70">{namaUtama}</p>
         {namaSubtitle && <p className="mt-0.5 text-xs text-sidebar-foreground/50">{namaSubtitle}</p>}
@@ -35,9 +36,9 @@ function Sidebar({ role, tipeMitra, namaUtama, namaSubtitle, kode, tokenApi }: S
       </div>
       <DashboardNav role={role} tipeMitra={tipeMitra} />
       <div className="mt-auto rounded-xl border border-sidebar-border/60 bg-white/10 p-3 text-sm">
-        <p className="font-medium">Token API IoT</p>
+        <p className="font-medium">{isPlatform ? "Kontrol Pusat" : "Token API IoT"}</p>
         <p className="mt-1 text-xs text-sidebar-foreground/70">
-          {isCabang ? "Token untuk alat ESP32 di cabang ini." : isLokaID ? "Dipakai alat di lokasi kegiatan." : "Dipakai alat ESP32 per cabang."}
+          {isPlatform ? "Kelola mitra dan preferensi scan." : isCabang ? "Token untuk alat ESP32 di cabang ini." : isLokaID ? "Dipakai alat di lokasi kegiatan." : "Dipakai alat ESP32 per cabang."}
         </p>
         {tokenApi && <p className="mt-2 break-all font-mono text-xs text-sidebar-foreground/60">{tokenApi}</p>}
       </div>
@@ -47,17 +48,19 @@ function Sidebar({ role, tipeMitra, namaUtama, namaSubtitle, kode, tokenApi }: S
 
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
   const session = await auth();
-  if (!session?.user?.mitraId) redirect("/login");
+  if (!session?.user) redirect("/login");
 
+  const isPlatform = session.user.role === "admin_platform";
   const isCabang = session.user.role === "admin_cabang";
+  if (!isPlatform && !session.user.mitraId) redirect("/login");
 
-  let namaUtama = session.user.mitraNama ?? "Mitra";
+  let namaUtama = isPlatform ? "Identiva Platform" : session.user.mitraNama ?? "Mitra";
   let namaSubtitle: string | null = null;
-  let kode: string | null = null;
+  let kode: string | null = isPlatform ? "admin_platform" : null;
   let tokenApi: string | null = null;
-  let tipeMitra = "subsidi";
+  let tipeMitra = isPlatform ? "platform" : "subsidi";
 
-  if (isCabang && session.user.cabangId) {
+  if (!isPlatform && isCabang && session.user.cabangId) {
     const cabang = await prisma.cabang.findUnique({
       where: { id: session.user.cabangId },
       select: { tokenApi: true, kode: true, nama: true, mitra: { select: { nama: true, tipeMitra: true } } },
@@ -67,7 +70,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
     kode = cabang?.kode ?? session.user.cabangKode ?? null;
     tokenApi = cabang?.tokenApi ?? null;
     tipeMitra = cabang?.mitra?.tipeMitra ?? "subsidi";
-  } else {
+  } else if (!isPlatform && session.user.mitraId) {
     const mitra = await prisma.mitra.findUnique({
       where: { id: session.user.mitraId },
       select: { tokenApi: true, kode: true, tipeMitra: true },
@@ -98,7 +101,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
               </SheetContent>
             </Sheet>
             <div>
-              <p className="text-sm text-muted-foreground">{isCabang ? "Cabang aktif" : "Mitra aktif"}</p>
+              <p className="text-sm text-muted-foreground">{isPlatform ? "Platform aktif" : isCabang ? "Cabang aktif" : "Mitra aktif"}</p>
               <h1 className="font-semibold leading-none">{namaUtama}</h1>
             </div>
           </div>

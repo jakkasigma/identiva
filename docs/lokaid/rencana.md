@@ -1,4 +1,4 @@
-# RENCANA IMPLEMENTASI â€” LOKAID
+ï»¿# RENCANA IMPLEMENTASI â€” LOKAID
 
 Dokumen ini adalah rencana teknis implementasi mitra **LokaID** di dalam platform Identiva. Referensi konsep produk ada di `ide.md`.
 
@@ -631,294 +631,173 @@ Admin induk LokaID perlu bisa mengelola akun login operator wilayah tanpa harus 
 
 ---
 
-## ITERASI V7 — DASHBOARD ADMIN PLATFORM + SISTEM PREFERENSI SCAN
+## ITERASI V7 - DASHBOARD ADMIN PLATFORM + SISTEM PREFERENSI SCAN
 
-> **Status: ?? Belum Dimulai**
+> **Status: Selesai** - Build production sukses, lint exit 0 (warning lama).
 
 ### Latar Belakang
 
-Identiva adalah **platform multi-tenant** yang mendukung berbagai jenis mitra (SPBU, LokaID, dll). Setiap mitra punya kebutuhan operasional berbeda, terutama dalam **metode scan kartu RFID**:
+Identiva adalah **platform multi-tenant** yang mendukung berbagai jenis mitra (SPBU, LokaID, dll). Setiap mitra punya kebutuhan operasional berbeda, terutama dalam **metode scan kartu RFID**.
 
-- **SPBU**: butuh konsistensi & keamanan ? wajib pakai alat ESP32 dedicated
-- **LokaID**: butuh fleksibilitas lapangan ? bisa alat ESP32 atau HP NFC (mobile)
-- **Mitra kecil**: tidak punya hardware ? input manual saja
+- **SPBU**: butuh konsistensi dan keamanan, wajib pakai alat ESP32 dedicated
+- **LokaID**: butuh fleksibilitas lapangan, bisa alat ESP32 atau HP NFC (mobile)
+- **Mitra kecil**: tidak punya hardware, input manual saja
 
-**Masalah sekarang:**
+**Masalah yang diselesaikan:**
 - Tidak ada kontrol pusat untuk atur metode scan per mitra
 - Semua mitra bisa akses semua fitur scan (tidak ada enforcement)
 - Belum ada dashboard untuk admin platform kelola mitra
 
-**Solusi V7:**
-Dashboard admin platform + sistem 2-level preference:
-1. **Platform ? Mitra**: Admin platform set metode apa yang **diizinkan**
-2. **Mitra ? Cabang**: Admin mitra pilih metode mana yang **aktif** per cabang
+**Solusi V7:** Dashboard admin platform + sistem 2-level preference:
+1. **Platform ke Mitra**: Admin platform set metode apa yang diizinkan
+2. **Mitra ke Cabang**: Admin mitra pilih metode mana yang aktif per cabang
 
 ### Konsep Sistem Preferensi Scan
 
-#### Metode Scan yang Tersedia
-
 | Metode | Hardware | Use Case | Auth |
-|--------|----------|----------|------|
+|---|---|---|---|
 | `alat_esp32` | RFID reader + ESP32 | Lokasi tetap, konsisten | Token cabang |
 | `hp_nfc` | Smartphone NFC | Mobile, lapangan | QR token / session |
 | `manual` | Keyboard | Fallback, tanpa hardware | Session login |
 
-#### Default per Tipe Mitra
+### Default per Tipe Mitra
 
 | Tipe Mitra | `metodeScanDiizinkan` | Alasan |
-|------------|----------------------|--------|
-| SPBU (subsidi) | `["alat_esp32"]` | Transaksi BBM butuh konsistensi & audit |
-| LokaID | `["alat_esp32", "hp_nfc"]` | Fieldwork fleksibel (posyandu, kunjungan rumah) |
+|---|---|---|
+| SPBU (subsidi) | `["alat_esp32"]` | Transaksi BBM butuh konsistensi dan audit |
+| LokaID | `["alat_esp32", "hp_nfc"]` | Fieldwork fleksibel |
 
-#### Alur Preferensi
+### Perubahan Teknis V7
 
-```
-Admin Platform (pusat Identiva)
-  ? set saat onboarding/edit mitra
-Mitra.metodeScanDiizinkan = ["alat_esp32", "hp_nfc"]
-  ?
-Admin Mitra Induk (SPBU/LokaID)
-  ? pilih per cabang/wilayah
-Cabang A: metodeScanAktif = "alat_esp32"
-Cabang B: metodeScanAktif = "hp_nfc"
-  ?
-Dashboard mitra: conditional UI
-  - Cabang A: tab "Scan Terbaru" (dari alat ESP32)
-  - Cabang B: button "Generate QR" (untuk HP)
-  ?
-API guard: validasi metode saat scan
-  - POST /api/uid-scan ? cek metodeScanAktif === "alat_esp32"
-  - POST /api/scan-register ? cek metodeScanAktif === "hp_nfc"
-```
+**Database:**
+- `Mitra.metodeScanDiizinkan Json @map("metode_scan_diizinkan")`
+- `Cabang.metodeScanAktif String @default("manual") @map("metode_scan_aktif")`
+- User seed `platform / mitra123` dengan role `admin_platform`
 
-### Perubahan Teknis
+**API:**
+- `GET /api/platform/mitra`
+- `GET /api/platform/mitra/[id]`
+- `PATCH /api/platform/mitra/[id]`
+- `GET /api/platform/stats`
+- `validateScanMethod()` di `src/lib/scan-guard.ts`
+- Guard `POST /api/uid-scan` untuk metode `alat_esp32`
 
-#### A. Database Schema
-
-**Tambah field di Mitra:**
-```prisma
-metodeScanDiizinkan String[] @default(["manual"]) @map("metode_scan_diizinkan")
-```
-
-**Tambah field di Cabang:**
-```prisma
-metodeScanAktif String @default("manual") @map("metode_scan_aktif")
-```
-
-**Tambah User admin_platform:**
-```ts
-{ username: "platform", role: "admin_platform", mitraId: null }
-```
-
-#### B. API Baru
-
-| Endpoint | Method | Fungsi | Auth |
-|----------|--------|--------|------|
-| `/api/platform/mitra` | GET | List semua mitra | admin_platform |
-| `/api/platform/mitra/:id` | GET | Detail mitra + cabang | admin_platform |
-| `/api/platform/mitra/:id` | PATCH | Edit metodeScanDiizinkan | admin_platform |
-| `/api/platform/stats` | GET | Statistik platform (agregat) | admin_platform |
-
-**API Guards (middleware baru):**
-```ts
-// lib/scan-guard.ts
-validateScanMethod(cabangId, method) 
-  ? cek cabang.metodeScanAktif === method
-  ? cek method in mitra.metodeScanDiizinkan
-  ? return { allowed: boolean, error?: string }
-```
-
-#### C. Frontend Baru
-
-**Dashboard Admin Platform:**
-```
-src/app/dashboard/platform/
-+-- page.tsx                    ? Ringkasan platform
-+-- mitra/
-¦   +-- page.tsx               ? List mitra (tabel)
-¦   +-- [id]/
-¦       +-- page.tsx          ? Detail mitra + edit preferensi scan
-```
-
-**Komponen Baru:**
-```
-src/components/platform/
-+-- MitraTable.tsx              ? Tabel list mitra
-+-- MitraScanPreference.tsx     ? Checkbox group edit metodeScanDiizinkan
-+-- PlatformStats.tsx           ? Card statistik agregat
-```
+**Frontend:**
+- `/dashboard/platform`
+- `/dashboard/platform/mitra`
+- `/dashboard/platform/mitra/[id]`
+- `MitraTable`
+- `MitraScanPreference`
+- Update `DashboardNav` untuk role `admin_platform`
+- Update `dashboard/layout.tsx` supaya `admin_platform` bisa masuk tanpa `mitraId`
+- Update `CabangForm` dan `WilayahLokaIDForm` untuk pilih metode scan aktif
+- Conditional UI tab Scan Terbaru berdasarkan `metodeScanAktif`
 
 ### Urutan Pengerjaan V7
 
 | # | Langkah | Status |
 | :--- | :--- | :--- |
-| 1 | Schema — add `metodeScanDiizinkan`, `metodeScanAktif` | ?? Belum |
-| 2 | Migration + data migration (set defaults by tipeMitra) | ?? Belum |
-| 3 | Seed — user platform + update mitra/cabang defaults | ?? Belum |
-| 4 | `lib/scan-guard.ts` — validateScanMethod middleware | ?? Belum |
-| 5 | API guards — update uid-scan, prepare for V8 | ?? Belum |
-| 6 | API platform — CRUD mitra, stats | ?? Belum |
-| 7 | Dashboard platform — layout, nav, halaman ringkasan | ?? Belum |
-| 8 | Dashboard platform — halaman mitra (list + detail + edit) | ?? Belum |
-| 9 | Komponen — MitraTable, MitraScanPreference, PlatformStats | ?? Belum |
-| 10 | Update dashboard mitra — conditional UI by metodeScanAktif | ?? Belum |
-| 11 | Update CabangForm — dropdown edit metodeScanAktif | ?? Belum |
-| 12 | Testing — login platform, edit preferensi, cek UI, test guard | ?? Belum |
-| 13 | Build & verifikasi | ?? Belum |
+| 1 | Schema - add `metodeScanDiizinkan`, `metodeScanAktif` | Selesai |
+| 2 | Migration + data migration (set defaults by tipeMitra) | Selesai |
+| 3 | Seed - user platform + update mitra/cabang defaults | Selesai |
+| 4 | `lib/scan-guard.ts` - validateScanMethod middleware | Selesai |
+| 5 | API guards - update uid-scan, prepare for V8 | Selesai |
+| 6 | API platform - CRUD mitra, stats | Selesai |
+| 7 | Dashboard platform - layout, nav, halaman ringkasan | Selesai |
+| 8 | Dashboard platform - halaman mitra (list + detail + edit) | Selesai |
+| 9 | Komponen - MitraTable, MitraScanPreference | Selesai |
+| 10 | Update dashboard mitra - conditional UI by metodeScanAktif | Selesai |
+| 11 | Update CabangForm/WilayahForm - dropdown edit metodeScanAktif | Selesai |
+| 12 | Testing - build + lint | Selesai |
+| 13 | Build & verifikasi | Selesai |
 
 ### Keputusan Desain V7
 
-1. **2-level preference** — platform control (security), mitra flexibility (operational)
-2. **Default auto-enable** — data migration set metodeScanAktif by tipeMitra
-3. **Strict validation** — API reject (403) jika metode tidak sesuai preferensi
-4. **Admin platform scope minimalis** — fokus edit preferensi scan; approve mitra ditunda
-5. **User platform tidak terikat mitra** — `mitraId=null`, akses semua mitra
-6. **Backward compatible** — existing workflow tidak break
+1. 2-level preference: platform control, mitra flexibility
+2. Default auto-enable: SPBU = alat ESP32, LokaID = HP NFC
+3. Strict validation: API reject 403 jika metode tidak sesuai preferensi
+4. Admin platform scope minimalis: fokus edit preferensi scan; approve mitra ditunda
+5. User platform tidak terikat mitra: `mitraId = null`
+6. Existing workflow tidak break
 
 ### Akun Demo V7
 
 | Username | Password | Role | Akses |
-|----------|----------|------|-------|
+|---|---|---|---|
 | `platform` | `mitra123` | admin_platform | Dashboard platform, kelola semua mitra |
 
 ---
 
-## ITERASI V8 — PENDATAAN MOBILE (SCAN HP VIA QR CODE)
+## ITERASI V8 - PENDATAAN MOBILE (SCAN HP VIA QR CODE)
 
-> **Status: ?? Belum Dimulai** (tunggu V7 selesai)
+> **Status: Belum Dimulai** (tunggu V7 selesai)
 
 ### Latar Belakang
 
-Alat ESP32 untuk scan RFID masih dalam tahap development hardware. Petugas lapangan LokaID butuh solusi fleksibel untuk pendataan peserta di lokasi kegiatan (posyandu, kunjungan rumah) **tanpa butuh hardware tambahan**.
+Alat ESP32 untuk scan RFID masih dalam tahap development hardware. Petugas lapangan LokaID butuh solusi fleksibel untuk pendataan peserta di lokasi kegiatan tanpa hardware tambahan.
 
-**Solusi:** Smartphone dengan **NFC** ? scan kartu via browser (Web NFC API).
+**Solusi:** Smartphone dengan NFC, scan kartu via browser (Web NFC API).
 
 ### Konsep QR Code sebagai Entry Point
 
-**Alur Pengguna:**
-
 ```
 Admin Wilayah di Dashboard
-  ? Buka program detail ? Tombol "Generate QR untuk Scan"
-  ? Modal: QR code + link + tombol cetak/copy
-  ? Cetak QR, tempel di lokasi posyandu
+  -> Buka program detail
+  -> Tombol Generate QR untuk Scan
+  -> QR code + link + tombol cetak/copy
+  -> Cetak QR, tempel di lokasi kegiatan
 
-Petugas Lapangan (HP apapun)
-  ? Scan QR pakai kamera HP ? Chrome buka /scan/abc123xyz
-  ? Halaman: "Posyandu Balita Agustus — Tap Kartu"
-  ? Tap kartu warga ke HP (NFC) ? UID terbaca ? auto-cek KTP:
-      • KTP belum ada ? form isi lengkap
-      • KTP sudah ada ? kartu info + tombol [Daftarkan] 1 klik
-  ? Peserta terdaftar (cabangId dari QR token)
+Petugas Lapangan
+  -> Scan QR pakai kamera HP
+  -> Chrome buka /scan/[token]
+  -> Tap kartu warga ke HP (NFC)
+  -> UID terbaca
+  -> Auto-cek KTP di Identiva:
+      - KTP belum ada: form isi lengkap
+      - KTP sudah ada: kartu info + tombol Daftarkan
+  -> Peserta terdaftar (cabangId dari QR token)
 ```
 
-### Perubahan Teknis
+### Perubahan Teknis V8
 
-#### A. Database Schema
+**Database:** tabel baru `qr_token`
 
-**Tabel baru `qr_token`:**
-```prisma
-model QRToken {
-  id          Int      @id @default(autoincrement())
-  token       String   @unique @db.VarChar(64)
-  programId   Int      @map("program_id")
-  cabangId    Int      @map("cabang_id")
-  scope       String   @default("scan_peserta") @db.VarChar(30)
-  expiresAt   DateTime @map("expires_at")
-  createdBy   Int      @map("created_by")
-  usageCount  Int      @default(0) @map("usage_count")
-  
-  program ProgramLokaID @relation(...)
-  cabang  Cabang        @relation(...)
-  creator User          @relation(...)
-  
-  createdAt DateTime @default(now()) @map("created_at")
-  
-  @@index([token, expiresAt])
-  @@map("qr_token")
-}
-```
+**API baru:**
+- `POST /api/lokaid/program/[id]/qr`
+- `GET /api/lokaid/qr/[token]/validate`
+- `POST /api/lokaid/qr/[token]/scan-register`
 
-#### B. API Baru
-
-| Endpoint | Method | Fungsi | Auth |
-|----------|--------|--------|------|
-| `/api/lokaid/program/:id/qr` | POST | Generate QR token | session |
-| `/api/lokaid/qr/:token/validate` | GET | Validasi token + return program info | public |
-| `/api/lokaid/qr/:token/scan-register` | POST | Scan UID + register peserta | public |
-
-#### C. Frontend Baru
-
-**Halaman Scan Publik:**
-```
-src/app/scan/[token]/page.tsx  ? Halaman scan NFC (public, no auth)
-```
-
-**Komponen:**
-```
-src/components/lokaid/
-+-- QRGenerator.tsx             ? Dialog generate QR
-+-- NFCScanUI.tsx              ? UI scan NFC
-+-- ScanResult.tsx             ? Display hasil scan
-```
-
-**Utility:**
-```
-src/lib/
-+-- nfc.ts                     ? Web NFC API wrapper
-+-- qr.ts                      ? QR code generator
-```
-
-#### D. Web NFC Integration
-
-**Requirements:**
-- Chrome Android 89+ (Web NFC support)
-- HTTPS wajib
-- NFC hardware aktif di HP
-
-**Fallback:**
-- iOS Safari tidak support ? input UID manual
+**Frontend baru:**
+- `/scan/[token]`
+- `QRGenerator`
+- `NFCScanUI`
+- `ScanResult`
+- `src/lib/nfc.ts`
+- `src/lib/qr.ts`
 
 ### Urutan Pengerjaan V8
 
 | # | Langkah | Status |
 | :--- | :--- | :--- |
-| 1 | Schema — tabel `qr_token` + migration | ?? Belum |
-| 2 | API — POST generate QR | ?? Belum |
-| 3 | API — GET validate token | ?? Belum |
-| 4 | API — POST scan-register + guard hp_nfc | ?? Belum |
-| 5 | Halaman scan publik + Web NFC integration | ?? Belum |
-| 6 | Komponen QRGenerator | ?? Belum |
-| 7 | Komponen NFCScanUI + ScanResult | ?? Belum |
-| 8 | Utility lib/nfc.ts + lib/qr.ts | ?? Belum |
-| 9 | Update program detail — button Generate QR | ?? Belum |
-| 10 | PWA manifest + service worker (optional) | ?? Belum |
-| 11 | Testing — generate QR, scan, tap kartu HP | ?? Belum |
-| 12 | Docs — panduan petugas | ?? Belum |
-| 13 | Build & verifikasi | ?? Belum |
+| 1 | Schema - tabel `qr_token` + migration | Belum |
+| 2 | API - POST generate QR | Belum |
+| 3 | API - GET validate token | Belum |
+| 4 | API - POST scan-register + guard hp_nfc | Belum |
+| 5 | Halaman scan publik + Web NFC integration | Belum |
+| 6 | Komponen QRGenerator | Belum |
+| 7 | Komponen NFCScanUI + ScanResult | Belum |
+| 8 | Utility lib/nfc.ts + lib/qr.ts | Belum |
+| 9 | Update program detail - button Generate QR | Belum |
+| 10 | PWA manifest + service worker (optional) | Belum |
+| 11 | Testing - generate QR, scan, tap kartu HP | Belum |
+| 12 | Docs - panduan petugas | Belum |
+| 13 | Build & verifikasi | Belum |
 
 ### Keputusan Desain V8
 
-1. **Token scope tied to program+cabang** — auto-assign wilayah
-2. **Token expiry 30 hari** (configurable)
-3. **Rate limiting** — max 100 scan/jam per token
-4. **Web NFC fallback** — input manual jika tidak support
-5. **Server-side validation** — tidak trust client
-6. **Offline queue** (PWA optional) — sync saat online
-
-### Security Considerations
-
-| Ancaman | Mitigasi |
-|---------|----------|
-| QR bocor | Token expire + rate limiting + audit usageCount |
-| MITM | HTTPS wajib |
-| Token brute-force | 64 char random (2^256) + DB index |
-
-### Batasan & Fallback
-
-| Batasan | Fallback |
-|---------|----------|
-| iOS Safari tidak support NFC | Input UID manual |
-| HP tidak punya NFC | Input manual |
-| Browser lama | Upgrade atau input manual |
-| Offline | PWA queue atau tunggu online |
+1. Token scope tied to program+cabang
+2. Token expiry 30 hari (configurable)
+3. Rate limiting max 100 scan/jam per token
+4. Web NFC fallback: input manual jika tidak support
+5. Server-side validation
+6. Offline queue optional via PWA

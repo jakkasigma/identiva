@@ -44,7 +44,7 @@ export default async function LokaIDPesertaPage({ searchParams }: PageProps<"/da
     ? { cabangId }
     : { cabang: { mitraId: session.user.mitraId } };
 
-  const [peserta, scans] = await Promise.all([
+  const [peserta, scans, cabangScan] = await Promise.all([
     prisma.pesertaLokaID.findMany({
       where: pesertaWhere,
       include: {
@@ -61,7 +61,13 @@ export default async function LokaIDPesertaPage({ searchParams }: PageProps<"/da
       orderBy: { waktuScan: "desc" },
       take: 10,
     }),
+    prisma.cabang.findMany({
+      where: cabangId ? { id: cabangId } : { mitraId: session.user.mitraId },
+      select: { metodeScanAktif: true },
+    }),
   ]);
+
+  const showScanTerbaru = cabangScan.some((c) => c.metodeScanAktif === "alat_esp32");
 
   const tujuanLabel: Record<string, string> = {
     bantuan: "Bantuan", kegiatan: "Kegiatan", pendataan: "Pendataan",
@@ -79,7 +85,7 @@ export default async function LokaIDPesertaPage({ searchParams }: PageProps<"/da
       <Tabs defaultValue="list" className="space-y-4">
         <TabsList>
           <TabsTrigger value="list">Daftar Peserta</TabsTrigger>
-          <TabsTrigger value="scan">Scan Terbaru</TabsTrigger>
+          {showScanTerbaru && <TabsTrigger value="scan">Scan Terbaru</TabsTrigger>}
           <TabsTrigger value="new">Daftar Baru</TabsTrigger>
         </TabsList>
 
@@ -161,17 +167,19 @@ export default async function LokaIDPesertaPage({ searchParams }: PageProps<"/da
           </Card>
         </TabsContent>
 
-        <TabsContent value="scan">
-          <Card>
-            <CardHeader>
-              <CardTitle>Scan Terbaru</CardTitle>
-              <CardDescription>UID dari alat di lapangan. Klik untuk melengkapi dan mendaftarkan ke program.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScanPesertaPanel scans={scans} programs={programs} />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {showScanTerbaru && (
+          <TabsContent value="scan">
+            <Card>
+              <CardHeader>
+                <CardTitle>Scan Terbaru</CardTitle>
+                <CardDescription>UID dari alat di lapangan. Klik untuk melengkapi dan mendaftarkan ke program.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScanPesertaPanel scans={scans} programs={programs} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         <TabsContent value="new">
           <Card>

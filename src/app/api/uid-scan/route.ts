@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCabangByToken, unauthorized } from "@/lib/auth-api";
+import { validateScanMethod } from "@/lib/scan-guard";
 
 const requestSchema = z.object({
   token: z.string().min(1),
@@ -12,6 +13,9 @@ export async function POST(request: Request) {
     const body = requestSchema.parse(await request.json());
     const cabang = await getCabangByToken(body.token);
     if (!cabang) return unauthorized();
+
+    const guard = await validateScanMethod(cabang.id, "alat_esp32");
+    if (!guard.allowed) return Response.json({ status: "error", pesan: guard.error }, { status: 403 });
 
     const scan = await prisma.scanPending.create({
       data: { cabangId: cabang.id, uidKartu: body.uid },

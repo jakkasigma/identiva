@@ -41,6 +41,9 @@ async function main() {
 
   const hash = await bcrypt.hash("mitra123", 10);
 
+  // User pusat Identiva
+  await prisma.user.create({ data: { username: "platform", passwordHash: hash, role: Role.admin_platform } });
+
   // ════════════════════════════════════════
   // MITRA 1 — SPBU Pertamina (tipe: subsidi)
   // ════════════════════════════════════════
@@ -54,6 +57,7 @@ async function main() {
       status: StatusMitra.aktif,
       tokenApi: "tok_spbu_pertamina_induk_2026_x9y8z7",
       saldoDefault: 200000,
+      metodeScanDiizinkan: ["alat_esp32"],
     },
   });
 
@@ -65,7 +69,7 @@ async function main() {
   ];
   const cabangRecords = [];
   for (const c of cabangData) {
-    cabangRecords.push(await prisma.cabang.create({ data: { ...c, status: StatusMitra.aktif, mitraId: pertamina.id } }));
+    cabangRecords.push(await prisma.cabang.create({ data: { ...c, status: StatusMitra.aktif, mitraId: pertamina.id, metodeScanAktif: "alat_esp32" } }));
   }
   const [fatmawati, sudirman, kemang] = cabangRecords;
 
@@ -145,6 +149,7 @@ async function main() {
       status: StatusMitra.aktif,
       tokenApi: "tok_kelurahan_skmkr_2026_k1e2l3u4",
       saldoDefault: 0,
+      metodeScanDiizinkan: ["alat_esp32", "hp_nfc"],
     },
   });
 
@@ -157,7 +162,7 @@ async function main() {
   ];
   const wilayahRecords: { id: number; nama: string; tokenApi: string }[] = [];
   for (const w of wilayahData) {
-    const wil = await prisma.cabang.create({ data: { ...w, status: StatusMitra.aktif, mitraId: kelurahan.id } });
+    const wil = await prisma.cabang.create({ data: { ...w, status: StatusMitra.aktif, mitraId: kelurahan.id, metodeScanAktif: "hp_nfc" } });
     wilayahRecords.push({ id: wil.id, nama: wil.nama, tokenApi: wil.tokenApi });
   }
   const [wilSukasari, wilCoblong] = wilayahRecords;

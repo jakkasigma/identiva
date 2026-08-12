@@ -9,15 +9,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { WilayahLokaIDForm } from "@/components/lokaid/WilayahLokaIDForm";
 import { ArrowRight, MapPin } from "lucide-react";
+import { SCAN_METHOD_LABELS, parseScanMethods } from "@/lib/scan-methods";
 
 export default async function LokaIDWilayahPage() {
   const session = await auth();
   if (!session?.user?.mitraId) redirect("/login");
 
   // Guard: hanya admin induk LokaID
-  const mitra = await prisma.mitra.findUnique({ where: { id: session.user.mitraId }, select: { tipeMitra: true } });
+  const mitra = await prisma.mitra.findUnique({ where: { id: session.user.mitraId }, select: { tipeMitra: true, metodeScanDiizinkan: true } });
   if (mitra?.tipeMitra !== "lokaid") redirect("/dashboard/spbu");
   if (session.user.role !== "admin_mitra") redirect("/dashboard/lokaid");
+  const allowedMethods = parseScanMethods(mitra.metodeScanDiizinkan);
 
   const wilayahList = await prisma.cabang.findMany({
     where: { mitraId: session.user.mitraId },
@@ -41,7 +43,7 @@ export default async function LokaIDWilayahPage() {
           <DialogTrigger render={<Button />}>Tambah Wilayah</DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>Tambah Wilayah Baru</DialogTitle></DialogHeader>
-            <WilayahLokaIDForm />
+            <WilayahLokaIDForm allowedMethods={allowedMethods} />
           </DialogContent>
         </Dialog>
       </div>
@@ -81,6 +83,10 @@ export default async function LokaIDWilayahPage() {
                   <p className="text-xs font-medium text-muted-foreground mb-1">Token API</p>
                   <p className="break-all font-mono text-xs text-muted-foreground">{w.tokenApi}</p>
                 </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Metode Scan</p>
+                  <Badge variant="outline">{SCAN_METHOD_LABELS[w.metodeScanAktif as keyof typeof SCAN_METHOD_LABELS] ?? w.metodeScanAktif}</Badge>
+                </div>
                 <div className="flex gap-2">
                   <Link href={`/dashboard/lokaid/wilayah/${w.id}`} className={buttonVariants({ variant: "default", size: "sm", className: "flex-1" })}>
                     Detail <ArrowRight className="ml-1 size-3" />
@@ -89,7 +95,7 @@ export default async function LokaIDWilayahPage() {
                     <DialogTrigger render={<Button variant="outline" size="sm" />}>Edit</DialogTrigger>
                     <DialogContent className="max-w-lg">
                       <DialogHeader><DialogTitle>Edit {w.nama}</DialogTitle></DialogHeader>
-                      <WilayahLokaIDForm wilayah={w} />
+                      <WilayahLokaIDForm wilayah={w} allowedMethods={allowedMethods} />
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -120,6 +126,7 @@ export default async function LokaIDWilayahPage() {
                   <TableHead>Operator</TableHead>
                   <TableHead>Program</TableHead>
                   <TableHead>Peserta</TableHead>
+                  <TableHead>Metode Scan</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -131,6 +138,7 @@ export default async function LokaIDWilayahPage() {
                     <TableCell>{w.users.find((u) => u.role === "admin_cabang")?.username ?? <span className="text-muted-foreground italic">—</span>}</TableCell>
                     <TableCell>{w.programLokaID.length}</TableCell>
                     <TableCell>{w.pesertaLokaID.length}</TableCell>
+                    <TableCell>{SCAN_METHOD_LABELS[w.metodeScanAktif as keyof typeof SCAN_METHOD_LABELS] ?? w.metodeScanAktif}</TableCell>
                     <TableCell><Badge variant={w.status === "aktif" ? "secondary" : "destructive"}>{w.status}</Badge></TableCell>
                   </TableRow>
                 ))}

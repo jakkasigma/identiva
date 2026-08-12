@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw } from "lucide-react";
+import { SCAN_METHOD_LABELS, type ScanMethod } from "@/lib/scan-methods";
 
 type Wilayah = {
   id?: number;
@@ -15,6 +16,7 @@ type Wilayah = {
   alamat?: string | null;
   tokenApi?: string;
   status?: string;
+  metodeScanAktif?: string;
 };
 
 function generateToken(nama: string): string {
@@ -23,13 +25,14 @@ function generateToken(nama: string): string {
   return `tok_wil_${slug}_2026_${rand}`;
 }
 
-export function WilayahLokaIDForm({ wilayah }: { wilayah?: Wilayah }) {
+export function WilayahLokaIDForm({ wilayah, allowedMethods = ["hp_nfc"] }: { wilayah?: Wilayah; allowedMethods?: ScanMethod[] }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState(wilayah?.tokenApi ?? "");
   const [namaWilayah, setNamaWilayah] = useState(wilayah?.nama ?? "");
   const [statusWilayah, setStatusWilayah] = useState(wilayah?.status ?? "aktif");
+  const [metodeScanAktif, setMetodeScanAktif] = useState(wilayah?.metodeScanAktif ?? allowedMethods[0] ?? "hp_nfc");
 
   const isEdit = !!wilayah?.id;
 
@@ -51,6 +54,7 @@ export function WilayahLokaIDForm({ wilayah }: { wilayah?: Wilayah }) {
         alamat:   formData.get("alamat") || null,
         tokenApi: token,
         status:   statusWilayah,
+        metodeScanAktif,
         // akun operator (hanya saat buat baru)
         username: isEdit ? undefined : formData.get("username") || undefined,
         password: isEdit ? undefined : formData.get("password") || undefined,
@@ -94,6 +98,19 @@ export function WilayahLokaIDForm({ wilayah }: { wilayah?: Wilayah }) {
             <SelectItem value="diblokir">Diblokir</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Metode Scan Aktif</Label>
+        <Select value={metodeScanAktif} onValueChange={(v) => setMetodeScanAktif((v ?? allowedMethods[0] ?? "hp_nfc") as ScanMethod)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {allowedMethods.map((method) => (
+              <SelectItem key={method} value={method}>{SCAN_METHOD_LABELS[method]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">Pilihan difilter dari izin admin platform.</p>
       </div>
 
       {/* Alamat */}

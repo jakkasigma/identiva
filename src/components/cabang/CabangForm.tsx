@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SCAN_METHOD_LABELS, type ScanMethod } from "@/lib/scan-methods";
 
 type Cabang = {
   id?: number;
@@ -14,13 +15,15 @@ type Cabang = {
   alamat?: string | null;
   tokenApi?: string;
   status?: string;
+  metodeScanAktif?: string;
 };
 
-export function CabangForm({ cabang }: { cabang?: Cabang }) {
+export function CabangForm({ cabang, allowedMethods = ["manual"] }: { cabang?: Cabang; allowedMethods?: ScanMethod[] }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState(cabang?.status ?? "aktif");
+  const [metodeScanAktif, setMetodeScanAktif] = useState(cabang?.metodeScanAktif ?? allowedMethods[0] ?? "manual");
 
   async function onSubmit(formData: FormData) {
     setPending(true);
@@ -36,6 +39,7 @@ export function CabangForm({ cabang }: { cabang?: Cabang }) {
         alamat: formData.get("alamat") || undefined,
         tokenApi: formData.get("tokenApi"),
         status,
+        metodeScanAktif,
       }),
     });
 
@@ -78,6 +82,20 @@ export function CabangForm({ cabang }: { cabang?: Cabang }) {
             <SelectItem value="diblokir">Diblokir</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>Metode Scan Aktif</Label>
+        <Select value={metodeScanAktif} onValueChange={(v) => setMetodeScanAktif((v ?? allowedMethods[0] ?? "manual") as ScanMethod)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {allowedMethods.map((method) => (
+              <SelectItem key={method} value={method}>{SCAN_METHOD_LABELS[method]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">Pilihan difilter dari izin admin platform.</p>
       </div>
       {error && <p className="text-sm text-destructive md:col-span-2">{error}</p>}
       <div className="md:col-span-2">

@@ -25,7 +25,7 @@ export default async function WargaPage() {
       ? { cabangId: session.user.cabangId }
       : { cabang: { mitraId: session.user.mitraId } };
 
-  const [wargaRaw, scans] = await Promise.all([
+  const [wargaRaw, scans, cabangScan] = await Promise.all([
     prisma.warga.findMany({
       where: { mitraId: session.user.mitraId },
       include: { penduduk: true },
@@ -37,7 +37,15 @@ export default async function WargaPage() {
       orderBy: { waktuScan: "desc" },
       take: 10,
     }),
+    prisma.cabang.findMany({
+      where: session.user.role === "admin_cabang" && session.user.cabangId
+        ? { id: session.user.cabangId }
+        : { mitraId: session.user.mitraId },
+      select: { metodeScanAktif: true },
+    }),
   ]);
+
+  const showScanTerbaru = cabangScan.some((c) => c.metodeScanAktif === "alat_esp32");
 
   // Ambil saldo bulan ini untuk semua penduduk mitra
   const saldoList = await prisma.saldo.findMany({
@@ -66,15 +74,17 @@ export default async function WargaPage() {
       <Tabs defaultValue="list" className="space-y-4">
         <TabsList>
           <TabsTrigger value="list">Warga Mitra</TabsTrigger>
-          <TabsTrigger value="scan">Scan Terbaru</TabsTrigger>
+          {showScanTerbaru && <TabsTrigger value="scan">Scan Terbaru</TabsTrigger>}
           <TabsTrigger value="new">Daftar Baru</TabsTrigger>
         </TabsList>
         <TabsContent value="list">
           <WargaTable warga={warga} />
         </TabsContent>
-        <TabsContent value="scan">
-          <ScanTerbaruPanel scans={scans} />
-        </TabsContent>
+        {showScanTerbaru && (
+          <TabsContent value="scan">
+            <ScanTerbaruPanel scans={scans} />
+          </TabsContent>
+        )}
         <TabsContent value="new">
           <Card>
             <CardHeader>

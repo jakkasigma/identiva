@@ -66,6 +66,7 @@ model Mitra {
   status       StatusMitra @default(pending)
   tokenApi     String      @unique @map("token_api") @db.VarChar(64)
   saldoDefault Int         @default(200000) @map("saldo_default")
+  metodeScanDiizinkan Json @map("metode_scan_diizinkan")
 
   users          User[]
   cabang         Cabang[]
@@ -89,6 +90,7 @@ model Cabang {
   status   StatusMitra @default(aktif)
   tokenApi String      @unique @map("token_api") @db.VarChar(64)
   mitraId  Int         @map("mitra_id")
+  metodeScanAktif String @default("manual") @map("metode_scan_aktif") @db.VarChar(20)
 
   mitra           Mitra              @relation(fields: [mitraId], references: [id])
   users           User[]

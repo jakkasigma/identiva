@@ -8,14 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CabangForm } from "@/components/cabang/CabangForm";
+import { SCAN_METHOD_LABELS, parseScanMethods } from "@/lib/scan-methods";
 
 export default async function CabangPage() {
   const session = await auth();
   if (!session?.user?.mitraId || session.user.role !== "admin_mitra") redirect("/dashboard");
 
   // Guard: hanya untuk SPBU
-  const mitra = await prisma.mitra.findUnique({ where: { id: session.user.mitraId }, select: { tipeMitra: true } });
+  const mitra = await prisma.mitra.findUnique({ where: { id: session.user.mitraId }, select: { tipeMitra: true, metodeScanDiizinkan: true } });
   if (mitra?.tipeMitra === "lokaid") redirect("/dashboard/lokaid");
+  const allowedMethods = parseScanMethods(mitra?.metodeScanDiizinkan);
 
   const { start, end } = getDateRange();
 
@@ -46,7 +48,7 @@ export default async function CabangPage() {
             <DialogHeader>
               <DialogTitle>Tambah Cabang Baru</DialogTitle>
             </DialogHeader>
-            <CabangForm />
+            <CabangForm allowedMethods={allowedMethods} />
           </DialogContent>
         </Dialog>
       </div>
@@ -96,6 +98,11 @@ export default async function CabangPage() {
                   <p className="break-all font-mono text-xs text-muted-foreground">{c.tokenApi}</p>
                 </div>
 
+                <div>
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">Metode Scan</p>
+                  <Badge variant="outline">{SCAN_METHOD_LABELS[c.metodeScanAktif as keyof typeof SCAN_METHOD_LABELS] ?? c.metodeScanAktif}</Badge>
+                </div>
+
                 {/* Operator */}
                 <div>
                   <p className="mb-1 text-xs font-medium text-muted-foreground">Operator</p>
@@ -117,7 +124,7 @@ export default async function CabangPage() {
                     <DialogHeader>
                       <DialogTitle>Edit {c.nama}</DialogTitle>
                     </DialogHeader>
-                    <CabangForm cabang={c} />
+                    <CabangForm cabang={c} allowedMethods={allowedMethods} />
                   </DialogContent>
                 </Dialog>
               </CardContent>
@@ -140,6 +147,7 @@ export default async function CabangPage() {
                 <TableHead>Kode</TableHead>
                 <TableHead>Operator</TableHead>
                 <TableHead>Total Transaksi</TableHead>
+                <TableHead>Metode Scan</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -154,6 +162,7 @@ export default async function CabangPage() {
                     )}
                   </TableCell>
                   <TableCell>{c._count.transaksi}</TableCell>
+                  <TableCell>{SCAN_METHOD_LABELS[c.metodeScanAktif as keyof typeof SCAN_METHOD_LABELS] ?? c.metodeScanAktif}</TableCell>
                   <TableCell>
                     <Badge variant={c.status === "aktif" ? "secondary" : "destructive"}>
                       {c.status}

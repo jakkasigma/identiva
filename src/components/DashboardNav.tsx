@@ -22,6 +22,11 @@ const itemsSubsidiCabang = [
   { href: "/dashboard/rekap",   label: "Rekap",     icon: BarChart3 },
 ];
 
+const itemsPlatform = [
+  { href: "/dashboard/platform",       label: "Ringkasan",  icon: Home },
+  { href: "/dashboard/platform/mitra", label: "Mitra",      icon: Building2 },
+];
+
 // ── Menu LokaID ──
 const itemsLokaID = [
   { href: "/dashboard/lokaid",             label: "Ringkasan",  icon: Home },
@@ -43,7 +48,9 @@ export function DashboardNav({ role, tipeMitra }: { role?: Role | null; tipeMitr
   const pathname = usePathname();
 
   let items = itemsSubsidiInduk;
-  if (tipeMitra === "lokaid") {
+  if (role === "admin_platform") {
+    items = itemsPlatform;
+  } else if (tipeMitra === "lokaid") {
     items = role === "admin_cabang" ? itemsLokaIDWilayah : itemsLokaID;
   } else if (role === "admin_cabang") {
     items = itemsSubsidiCabang;

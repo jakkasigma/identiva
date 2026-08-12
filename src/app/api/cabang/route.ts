@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { SCAN_METHODS, parseScanMethods } from "@/lib/scan-methods";
 
 const schema = z.object({
   id: z.coerce.number().int().positive().optional(),
@@ -9,6 +10,7 @@ const schema = z.object({
   alamat: z.string().optional(),
   tokenApi: z.string().min(8),
   status: z.enum(["pending", "aktif", "diblokir"]).default("aktif"),
+  metodeScanAktif: z.enum(SCAN_METHODS).default("manual"),
 });
 
 export async function GET() {
@@ -36,6 +38,14 @@ export async function POST(request: Request) {
     }
 
     const body = schema.parse(await request.json());
+    const mitra = await prisma.mitra.findUnique({
+      where: { id: session.user.mitraId },
+      select: { metodeScanDiizinkan: true },
+    });
+    const allowedMethods = parseScanMethods(mitra?.metodeScanDiizinkan);
+    if (!allowedMethods.includes(body.metodeScanAktif)) {
+      return Response.json({ error: "Metode scan tidak diizinkan untuk mitra ini" }, { status: 403 });
+    }
 
     const data = {
       nama: body.nama,
@@ -43,6 +53,7 @@ export async function POST(request: Request) {
       alamat: body.alamat ?? null,
       tokenApi: body.tokenApi,
       status: body.status,
+      metodeScanAktif: body.metodeScanAktif,
       mitraId: session.user.mitraId,
     };
 
