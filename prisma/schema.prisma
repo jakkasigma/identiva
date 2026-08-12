@@ -1,0 +1,347 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ──── Enums ────
+
+enum Role {
+  admin_mitra    // admin mitra induk
+  admin_cabang   // operator per cabang SPBU
+  admin_platform
+}
+
+enum StatusMitra {
+  pending
+  aktif
+  diblokir
+}
+
+enum StatusWarga {
+  aktif
+  diblokir
+}
+
+enum MetodeBayar {
+  cash
+  qris
+}
+
+enum PeriodeReset {
+  harian
+  mingguan
+  bulanan
+  sekali
+}
+
+// ──── Models ────
+
+model User {
+  id           Int    @id @default(autoincrement())
+  username     String @unique @db.VarChar(50)
+  passwordHash String @map("password_hash") @db.VarChar(255)
+  role         Role   @default(admin_mitra)
+  mitraId      Int?   @map("mitra_id")
+  cabangId     Int?   @map("cabang_id")
+
+  mitra  Mitra?  @relation(fields: [mitraId], references: [id])
+  cabang Cabang? @relation(fields: [cabangId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("user")
+}
+
+model Mitra {
+  id           Int         @id @default(autoincrement())
+  nama         String      @db.VarChar(100)
+  kode         String      @unique @db.VarChar(30)
+  skala        String      @db.VarChar(20)
+  jenisLayanan String      @map("jenis_layanan") @db.VarChar(100)
+  tipeMitra    String      @default("subsidi") @map("tipe_mitra") @db.VarChar(30) // "subsidi" | "lokaid"
+  status       StatusMitra @default(pending)
+  tokenApi     String      @unique @map("token_api") @db.VarChar(64)
+  saldoDefault Int         @default(200000) @map("saldo_default")
+
+  users          User[]
+  cabang         Cabang[]
+  programSubsidi ProgramSubsidi[]
+  warga          Warga[]
+  saldo          Saldo[]
+  transaksi      Transaksi[]
+  programLokaID  ProgramLokaID[]
+  aktivitasLokaID AktivitasLokaID[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("mitra")
+}
+
+model Cabang {
+  id       Int         @id @default(autoincrement())
+  nama     String      @db.VarChar(100)
+  kode     String      @unique @db.VarChar(30)
+  alamat   String?     @db.VarChar(255)
+  status   StatusMitra @default(aktif)
+  tokenApi String      @unique @map("token_api") @db.VarChar(64)
+  mitraId  Int         @map("mitra_id")
+
+  mitra           Mitra              @relation(fields: [mitraId], references: [id])
+  users           User[]
+  transaksi       Transaksi[]
+  scanPending     ScanPending[]
+  aktivitasLokaID AktivitasLokaID[]
+  programLokaID   ProgramLokaID[]    @relation("ProgramLokaIDCabang")
+  pesertaLokaID   PesertaLokaID[]    @relation("PesertaLokaIDCabang")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("cabang")
+}
+
+model ProgramSubsidi {
+  id           Int          @id @default(autoincrement())
+  nama         String       @db.VarChar(50)
+  bersubsidi   Boolean      @default(true)
+  diskon       Int          @default(0) // persentase
+  periodeReset PeriodeReset @default(bulanan) @map("periode_reset")
+  mitraId      Int          @map("mitra_id")
+
+  mitra     Mitra       @relation(fields: [mitraId], references: [id])
+  transaksi Transaksi[]
+
+  @@map("program_subsidi")
+}
+
+model Penduduk {
+  id       Int    @id @default(autoincrement())
+  nik      String @unique @db.VarChar(16)
+  nama     String @db.VarChar(100)
+  alamat   String @db.VarChar(255)
+  uidKartu String @unique @map("uid_kartu") @db.VarChar(20)
+
+  warga Warga[]
+  saldo Saldo[]
+  pesertaLokaID PesertaLokaID[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("penduduk")
+}
+
+model Warga {
+  id         Int         @id @default(autoincrement())
+  pendudukId Int         @map("penduduk_id")
+  mitraId    Int         @map("mitra_id")
+  status     StatusWarga @default(aktif)
+
+  penduduk  Penduduk    @relation(fields: [pendudukId], references: [id])
+  mitra     Mitra       @relation(fields: [mitraId], references: [id])
+  transaksi Transaksi[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([pendudukId, mitraId])
+  @@map("warga")
+}
+
+model Saldo {
+  id            Int    @id @default(autoincrement())
+  pendudukId    Int    @map("penduduk_id")
+  mitraId       Int    @map("mitra_id")
+  saldoTotal    Int    @map("saldo_total")
+  saldoTerpakai Int    @default(0) @map("saldo_terpakai")
+  periode       String @db.VarChar(10)
+
+  penduduk Penduduk @relation(fields: [pendudukId], references: [id])
+  mitra    Mitra    @relation(fields: [mitraId], references: [id])
+
+  @@unique([pendudukId, mitraId, periode])
+  @@map("saldo")
+}
+
+model Transaksi {
+  id               Int         @id @default(autoincrement())
+  wargaId          Int         @map("warga_id")
+  mitraId          Int         @map("mitra_id")
+  cabangId         Int         @map("cabang_id")
+  programSubsidiId Int         @map("program_subsidi_id")
+  waktu            DateTime    @default(now())
+  nominal          Int
+  diskon           Int
+  diskonRupiah     Int         @map("diskon_rupiah")
+  totalBayar       Int         @map("total_bayar")
+  metodeBayar      MetodeBayar @map("metode_bayar")
+
+  warga          Warga          @relation(fields: [wargaId], references: [id])
+  mitra          Mitra          @relation(fields: [mitraId], references: [id])
+  cabang         Cabang         @relation(fields: [cabangId], references: [id])
+  programSubsidi ProgramSubsidi @relation(fields: [programSubsidiId], references: [id])
+
+  @@index([mitraId, waktu])
+  @@index([cabangId, waktu])
+  @@map("transaksi")
+}
+
+model ScanPending {
+  id        Int      @id @default(autoincrement())
+  cabangId  Int      @map("cabang_id")
+  uidKartu  String   @map("uid_kartu") @db.VarChar(20)
+  waktuScan DateTime @default(now()) @map("waktu_scan")
+
+  cabang Cabang @relation(fields: [cabangId], references: [id])
+
+  @@map("scan_pending")
+}
+
+// ──── LokaID ────
+
+model ProgramLokaID {
+  id              Int          @id @default(autoincrement())
+  nama            String       @db.VarChar(100)
+  deskripsi       String?      @db.Text
+  tujuan          String       @db.VarChar(30)   // "bantuan" | "kegiatan" | "pendataan" | "peminjaman" | "pendaftaran"
+  sasaran         String       @default("warga") @db.VarChar(20) // "warga" | "anak"
+  kuotaTotal      Int?         @map("kuota_total")
+  periodeReset    PeriodeReset @default(bulanan) @map("periode_reset")
+  perluVerifikasi Boolean      @default(false) @map("perlu_verifikasi")
+  status          String       @default("aktif") @db.VarChar(20)
+  mitraId         Int          @map("mitra_id")
+  cabangId        Int?         @map("cabang_id")  // null = program induk, ada = program wilayah
+  tanggalMulai    DateTime?    @map("tanggal_mulai")
+  tanggalSelesai  DateTime?    @map("tanggal_selesai")
+
+  mitra         Mitra                    @relation(fields: [mitraId], references: [id])
+  cabang        Cabang?                  @relation("ProgramLokaIDCabang", fields: [cabangId], references: [id])
+  peserta       PesertaLokaID[]
+  aktivitas     AktivitasLokaID[]
+  aktivitasList ProgramAktivitasLokaID[]
+  statusPeserta StatusPesertaLokaID[]
+  fields        ProgramFieldLokaID[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("program_lokaid")
+}
+
+model ProgramAktivitasLokaID {
+  id        Int    @id @default(autoincrement())
+  programId Int    @map("program_id")
+  jenis     String @db.VarChar(30)  // kode aktivitas: checkin | distribusi | verifikasi | pendataan | dll
+  urutan    Int    @default(0)       // urutan dalam workflow
+
+  program ProgramLokaID @relation(fields: [programId], references: [id])
+
+  @@unique([programId, jenis])
+  @@map("program_aktivitas_lokaid")
+}
+
+model PesertaLokaID {
+  id         Int    @id @default(autoincrement())
+  pendudukId Int    @map("penduduk_id")
+  programId  Int    @map("program_id")
+  cabangId   Int?   @map("cabang_id")  // wilayah yang mendaftarkan peserta ini
+  status     String @default("aktif") @db.VarChar(20) // aktif | diblokir | selesai
+
+  penduduk      Penduduk                  @relation(fields: [pendudukId], references: [id])
+  program       ProgramLokaID             @relation(fields: [programId], references: [id])
+  cabang        Cabang?                   @relation("PesertaLokaIDCabang", fields: [cabangId], references: [id])
+  aktivitas     AktivitasLokaID[]
+  statusPeserta StatusPesertaLokaID[]
+  fieldValues   PesertaFieldValueLokaID[]
+  dependents    DependentLokaID[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([pendudukId, programId])
+  @@map("peserta_lokaid")
+}
+
+model StatusPesertaLokaID {
+  id        Int      @id @default(autoincrement())
+  pesertaId Int      @map("peserta_id")
+  programId Int      @map("program_id")
+  status    String   @db.VarChar(30)  // nilai tergantung tujuan program
+  periode   String   @db.VarChar(10)  // "2026-08" | "2026-W32" | "2026-08-11"
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  peserta PesertaLokaID @relation(fields: [pesertaId], references: [id])
+  program ProgramLokaID @relation(fields: [programId], references: [id])
+
+  @@unique([pesertaId, programId, periode])
+  @@map("status_peserta_lokaid")
+}
+
+model AktivitasLokaID {
+  id          Int      @id @default(autoincrement())
+  pesertaId   Int      @map("peserta_id")
+  programId   Int      @map("program_id")
+  mitraId     Int      @map("mitra_id")
+  cabangId    Int?     @map("cabang_id")
+  dependentId Int?     @map("dependent_id")
+  jenis       String   @db.VarChar(30)  // checkin | distribusi | verifikasi | pendataan | pengajuan | persetujuan | peminjaman | pengembalian | pendaftaran | aktivasi | penilaian
+  keterangan  String?  @db.VarChar(255)
+  waktu       DateTime @default(now())
+
+  peserta   PesertaLokaID    @relation(fields: [pesertaId], references: [id])
+  program   ProgramLokaID    @relation(fields: [programId], references: [id])
+  mitra     Mitra            @relation(fields: [mitraId], references: [id])
+  cabang    Cabang?          @relation(fields: [cabangId], references: [id])
+  dependent DependentLokaID? @relation(fields: [dependentId], references: [id])
+
+  @@index([programId, waktu])
+  @@index([mitraId, waktu])
+  @@map("aktivitas_lokaid")
+}
+
+model ProgramFieldLokaID {
+  id        Int     @id @default(autoincrement())
+  programId Int     @map("program_id")
+  nama      String  @db.VarChar(100)
+  kode      String  @db.VarChar(50)
+  tipe      String  @db.VarChar(20)   // "text"|"number"|"date"|"dropdown"|"radio"|"checkbox"
+  wajib     Boolean @default(false)
+  urutan    Int     @default(0)
+  opsi      String? @db.Text          // JSON array untuk dropdown/radio/checkbox: ["Baik","Kurang","Buruk"]
+
+  program ProgramLokaID             @relation(fields: [programId], references: [id])
+  nilai   PesertaFieldValueLokaID[]
+
+  @@unique([programId, kode])
+  @@map("program_field_lokaid")
+}
+
+model PesertaFieldValueLokaID {
+  id        Int      @id @default(autoincrement())
+  pesertaId Int      @map("peserta_id")
+  fieldId   Int      @map("field_id")
+  nilai     String?  @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  peserta PesertaLokaID      @relation(fields: [pesertaId], references: [id])
+  field   ProgramFieldLokaID @relation(fields: [fieldId], references: [id])
+
+  @@unique([pesertaId, fieldId])
+  @@map("peserta_field_value_lokaid")
+}
+
+model DependentLokaID {
+  id           Int       @id @default(autoincrement())
+  waliId       Int       @map("wali_id")
+  nama         String    @db.VarChar(100)
+  tanggalLahir DateTime? @map("tanggal_lahir")
+  jenisKelamin String?   @map("jenis_kelamin") @db.VarChar(10)  // "L" | "P"
+  keterangan   String?   @db.VarChar(255)
+
+  wali      PesertaLokaID    @relation(fields: [waliId], references: [id])
+  aktivitas AktivitasLokaID[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("dependent_lokaid")
+}

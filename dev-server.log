@@ -1,0 +1,104 @@
+
+> identiva-web@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.56.1:3000
+- Environments: .env
+✓ Ready in 1560ms
+✓ Running next.config.ts took 124ms
+
+○ Compiling / ...
+ GET / 200 in 2.6s (next.js: 2.1s, application-code: 526ms)
+ GET / 200 in 8.6s (next.js: 8.1s, application-code: 495ms)
+○ Compiling /login ...
+ GET /login 200 in 3.9s (next.js: 3.6s, application-code: 278ms)
+ GET /api/auth/csrf 200 in 5.8s (next.js: 5.6s, application-code: 120ms)
+ POST /api/auth/callback/credentials 302 in 504ms (next.js: 131ms, application-code: 373ms)
+○ Compiling /dashboard ...
+ GET /dashboard 200 in 5.6s (next.js: 4.9s, proxy.ts: 172ms, application-code: 591ms)
+ GET / 200 in 1404ms (next.js: 553ms, application-code: 851ms)
+ GET /login 200 in 318ms (next.js: 150ms, application-code: 168ms)
+
+[26592:0807/022002.703:ERROR:electron\shell\common\node_bindings.cc:509] Most NODE_OPTIONs are not supported in packaged apps. See documentation for more details.
+[26592:0807/022002.704:ERROR:electron\shell\common\node_bindings.cc:509] Most NODE_OPTIONs are not supported in packaged apps. See documentation for more details.
+
+[17224:0807/022003.381:ERROR:electron\shell\common\node_bindings.cc:509] Most NODE_OPTIONs are not supported in packaged apps. See documentation for more details.
+[17224:0807/022003.381:ERROR:electron\shell\common\node_bindings.cc:509] Most NODE_OPTIONs are not supported in packaged apps. See documentation for more details.
+ GET /login 200 in 804ms (next.js: 129ms, application-code: 676ms)
+ GET /login 200 in 301ms (next.js: 180ms, application-code: 121ms)
+ GET /login 200 in 135ms (next.js: 14ms, application-code: 121ms)
+ GET /login 200 in 184ms (next.js: 26ms, application-code: 158ms)
+ GET /dashboard 200 in 1536ms (next.js: 47ms, proxy.ts: 997ms, application-code: 492ms)
+ POST /login 200 in 3.0s (next.js: 18ms, application-code: 3.0s)
+  └─ ƒ loginAction(undefined, {}) in 889ms src/app/login/actions.ts
+○ Compiling /dashboard/warga ...
+ GET /dashboard/warga 200 in 8.7s (next.js: 8.2s, proxy.ts: 45ms, application-code: 421ms)
+ GET /dashboard/warga 200 in 392ms (next.js: 66ms, proxy.ts: 88ms, application-code: 239ms)
+○ Compiling /dashboard/program ...
+ GET /dashboard/program 200 in 7.5s (next.js: 7.0s, proxy.ts: 116ms, application-code: 406ms)
+ GET /dashboard/program 200 in 482ms (next.js: 26ms, proxy.ts: 83ms, application-code: 373ms)
+ GET /dashboard/warga 200 in 818ms (next.js: 32ms, proxy.ts: 183ms, application-code: 603ms)
+ GET /dashboard/program 200 in 184ms (next.js: 26ms, proxy.ts: 28ms, application-code: 130ms)
+○ Compiling /dashboard/rekap ...
+ GET /dashboard/rekap 200 in 13.8s (next.js: 13.4s, proxy.ts: 28ms, application-code: 280ms)
+ GET /dashboard 200 in 437ms (next.js: 115ms, proxy.ts: 61ms, application-code: 260ms)
+ GET /dashboard/warga 200 in 239ms (next.js: 21ms, proxy.ts: 50ms, application-code: 167ms)
+ GET /dashboard/program 200 in 348ms (next.js: 23ms, proxy.ts: 78ms, application-code: 247ms)
+ GET /dashboard/rekap 200 in 172ms (next.js: 28ms, proxy.ts: 24ms, application-code: 120ms)
+ GET /dashboard/program 200 in 7.7s (next.js: 17ms, proxy.ts: 30ms, application-code: 7.7s)
+ GET /dashboard/program 200 in 3.7s (next.js: 120ms, proxy.ts: 2.9s, application-code: 694ms)
+ GET /dashboard/warga 200 in 2.1s (next.js: 232ms, proxy.ts: 1293ms, application-code: 556ms)
+ GET /dashboard/rekap 200 in 6.7s (next.js: 96ms, proxy.ts: 5.8s, application-code: 787ms)
+ GET /dashboard/warga 200 in 996ms (next.js: 240ms, proxy.ts: 272ms, application-code: 484ms)
+ GET /dashboard/warga 200 in 172ms (next.js: 13ms, proxy.ts: 30ms, application-code: 129ms)
+ GET /dashboard/warga 200 in 150ms (next.js: 15ms, proxy.ts: 23ms, application-code: 112ms)
+ GET / 200 in 540ms (next.js: 111ms, application-code: 429ms)
+ GET /login 200 in 285ms (next.js: 56ms, application-code: 229ms)
+ GET /login 200 in 204ms (next.js: 13ms, application-code: 191ms)
+ GET /login 200 in 1050ms (next.js: 13ms, application-code: 1037ms)
+ GET /login 200 in 344ms (next.js: 13ms, application-code: 331ms)
+ GET /login 200 in 972ms (next.js: 92ms, application-code: 880ms)
+ GET /api/auth/csrf 200 in 367ms (next.js: 228ms, application-code: 139ms)
+ POST /api/auth/callback/credentials 302 in 398ms (next.js: 11ms, application-code: 387ms)
+ GET /dashboard/warga 200 in 1200ms (next.js: 42ms, proxy.ts: 58ms, application-code: 1100ms)
+ GET /dashboard/warga 200 in 881ms (next.js: 33ms, proxy.ts: 165ms, application-code: 683ms)
+ GET /dashboard/rekap 200 in 1492ms (next.js: 24ms, proxy.ts: 46ms, application-code: 1423ms)
+ GET /dashboard/rekap 200 in 943ms (next.js: 50ms, proxy.ts: 39ms, application-code: 853ms)
+ GET /dashboard/program 200 in 2.2s (next.js: 42ms, proxy.ts: 44ms, application-code: 2.1s)
+ GET /dashboard/program 200 in 1602ms (next.js: 77ms, proxy.ts: 279ms, application-code: 1246ms)
+ GET /dashboard 200 in 667ms (next.js: 25ms, proxy.ts: 43ms, application-code: 599ms)
+ GET /dashboard 200 in 2.1s (next.js: 22ms, proxy.ts: 54ms, application-code: 1993ms)
+ GET /dashboard/program 200 in 210ms (next.js: 19ms, proxy.ts: 42ms, application-code: 149ms)
+ GET /dashboard/warga 200 in 219ms (next.js: 25ms, proxy.ts: 68ms, application-code: 127ms)
+ GET /dashboard 200 in 169ms (next.js: 13ms, proxy.ts: 26ms, application-code: 131ms)
+ GET /dashboard/warga 200 in 310ms (next.js: 13ms, proxy.ts: 26ms, application-code: 272ms)
+ GET /dashboard 200 in 186ms (next.js: 12ms, proxy.ts: 22ms, application-code: 152ms)
+ GET /dashboard/warga 200 in 692ms (next.js: 28ms, proxy.ts: 26ms, application-code: 637ms)
+ GET /dashboard 200 in 158ms (next.js: 15ms, proxy.ts: 33ms, application-code: 110ms)
+ GET /dashboard/warga 200 in 216ms (next.js: 27ms, proxy.ts: 35ms, application-code: 154ms)
+ GET /dashboard/program 200 in 124ms (next.js: 15ms, proxy.ts: 26ms, application-code: 83ms)
+ GET /dashboard/rekap 200 in 146ms (next.js: 14ms, proxy.ts: 25ms, application-code: 107ms)
+ GET /dashboard/program 200 in 152ms (next.js: 14ms, proxy.ts: 30ms, application-code: 108ms)
+ GET /dashboard/warga 200 in 182ms (next.js: 42ms, proxy.ts: 22ms, application-code: 118ms)
+ GET /dashboard/program 200 in 360ms (next.js: 28ms, proxy.ts: 48ms, application-code: 284ms)
+ GET /dashboard/warga 200 in 368ms (next.js: 16ms, proxy.ts: 23ms, application-code: 328ms)
+▲ Next.js 16.3.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.56.1:3000
+- Environments: .env
+✓ Ready in 3.8s
+✓ Running next.config.ts took 2.3s
+
+ GET /login 200 in 6.6s (next.js: 3.1s, application-code: 3.5s)
+ GET /login 200 in 1956ms (next.js: 57ms, application-code: 1898ms)
+ GET /dashboard/program 200 in 10.6s (next.js: 1006ms, proxy.ts: 6.8s, application-code: 2.8s)
+ GET /dashboard/warga 200 in 10.5s (next.js: 892ms, proxy.ts: 6.7s, application-code: 2.9s)
+ GET /dashboard/rekap 200 in 10.7s (next.js: 1149ms, proxy.ts: 6.8s, application-code: 2.7s)
+ GET /login 200 in 635ms (next.js: 35ms, application-code: 600ms)
+ GET /login 200 in 499ms (next.js: 45ms, application-code: 453ms)
+ GET /dashboard/warga 200 in 1942ms (next.js: 136ms, proxy.ts: 841ms, application-code: 966ms)
+ GET /dashboard 200 in 4.0s (next.js: 559ms, proxy.ts: 186ms, application-code: 3.3s)
+ GET /dashboard 200 in 265ms (next.js: 14ms, proxy.ts: 41ms, application-code: 210ms)
+ GET /dashboard 200 in 3.3s (next.js: 644ms, proxy.ts: 737ms, application-code: 1884ms)
