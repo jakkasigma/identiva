@@ -338,3 +338,30 @@ UI dashboard juga hide feature yang tidak aktif (conditional render).
 - [Dashboard Admin Platform](./admin-platform.md)
 - [Pendataan Mobile (HP NFC)](../lokaid/rencana.md#iterasi-v8)
 - [Alat ESP32 (Hardware Setup)](../hardware/esp32-setup.md) *(future)*
+
+---
+
+## Testing Lokal via Ngrok
+
+Web NFC wajib HTTPS, jadi testing HP lokal perlu tunnel HTTPS.
+
+1. Jalankan dev server:
+   ```bash
+   npm run dev
+   ```
+2. Jalankan ngrok:
+   ```bash
+   ngrok http 3000
+   ```
+3. Buka login dari URL ngrok:
+   ```txt
+   https://xxxx.ngrok-free.app/login
+   ```
+4. Login pakai akun wilayah (`sukasari / mitra123`) atau admin induk (`kelurahan / mitra123`).
+
+Auth sudah memakai `trustHost: true`, jadi callback login mengikuti host request (ngrok/local) dan tidak balik paksa ke `localhost`.
+
+Jika masih redirect ke localhost, set env sementara:
+```powershell
+$env:AUTH_URL="https://xxxx.ngrok-free.app"; $env:NEXTAUTH_URL="https://xxxx.ngrok-free.app"; npm run dev
+```
