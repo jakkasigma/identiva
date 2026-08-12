@@ -50,6 +50,7 @@ model User {
 
   mitra  Mitra?  @relation(fields: [mitraId], references: [id])
   cabang Cabang? @relation(fields: [cabangId], references: [id])
+  qrTokens QRToken[]
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -99,6 +100,7 @@ model Cabang {
   aktivitasLokaID AktivitasLokaID[]
   programLokaID   ProgramLokaID[]    @relation("ProgramLokaIDCabang")
   pesertaLokaID   PesertaLokaID[]    @relation("PesertaLokaIDCabang")
+  qrTokens        QRToken[]
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -225,6 +227,7 @@ model ProgramLokaID {
   aktivitasList ProgramAktivitasLokaID[]
   statusPeserta StatusPesertaLokaID[]
   fields        ProgramFieldLokaID[]
+  qrTokens      QRToken[]
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -346,4 +349,24 @@ model DependentLokaID {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("dependent_lokaid")
+}
+
+model QRToken {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique @db.VarChar(64)
+  programId  Int      @map("program_id")
+  cabangId   Int      @map("cabang_id")
+  scope      String   @default("scan_peserta") @db.VarChar(30)
+  expiresAt  DateTime @map("expires_at")
+  createdBy  Int      @map("created_by")
+  usageCount Int      @default(0) @map("usage_count")
+
+  program ProgramLokaID @relation(fields: [programId], references: [id])
+  cabang  Cabang        @relation(fields: [cabangId], references: [id])
+  creator User          @relation(fields: [createdBy], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token, expiresAt])
+  @@map("qr_token")
 }

@@ -15,6 +15,7 @@ import { PendataanView }   from "@/components/lokaid/views/PendataanView";
 import { PeminjamanView }  from "@/components/lokaid/views/PeminjamanView";
 import { PendaftaranView } from "@/components/lokaid/views/PendaftaranView";
 import { DynamicDataForm, type FieldDef } from "@/components/lokaid/DynamicDataForm";
+import { QRGenerator } from "@/components/lokaid/QRGenerator";
 
 const tujuanLabel: Record<string, string> = {
   bantuan: "Memberikan Bantuan", kegiatan: "Mengadakan Kegiatan",
@@ -46,6 +47,11 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
 
   const periode = getCurrentPeriode(program.periodeReset);
   const hasFields = program.fields.length > 0;
+  const qrCabangId = session.user.role === "admin_cabang" ? session.user.cabangId : program.cabangId;
+  const qrCabang = qrCabangId
+    ? await prisma.cabang.findUnique({ where: { id: qrCabangId }, select: { metodeScanAktif: true } })
+    : null;
+  const showQRGenerator = qrCabang?.metodeScanAktif === "hp_nfc";
 
   const pesertaRaw = await prisma.pesertaLokaID.findMany({
     where: { programId },
@@ -98,6 +104,17 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
         </div>
         <Badge variant={program.status === "aktif" ? "secondary" : "outline"} className="capitalize self-start mt-1">{program.status}</Badge>
       </div>
+
+      {showQRGenerator && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Scan HP via QR</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <QRGenerator programId={program.id} />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Card>

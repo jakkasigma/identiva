@@ -730,7 +730,7 @@ Identiva adalah **platform multi-tenant** yang mendukung berbagai jenis mitra (S
 
 ## ITERASI V8 - PENDATAAN MOBILE (SCAN HP VIA QR CODE)
 
-> **Status: Belum Dimulai** (tunggu V7 selesai)
+> **Status: Selesai** - Build production sukses, lint exit 0 (warning lama).
 
 ### Latar Belakang
 
@@ -765,33 +765,33 @@ Petugas Lapangan
 **API baru:**
 - `POST /api/lokaid/program/[id]/qr`
 - `GET /api/lokaid/qr/[token]/validate`
+- `GET /api/lokaid/qr/[token]/lookup`
 - `POST /api/lokaid/qr/[token]/scan-register`
 
 **Frontend baru:**
 - `/scan/[token]`
 - `QRGenerator`
 - `NFCScanUI`
-- `ScanResult`
-- `src/lib/nfc.ts`
-- `src/lib/qr.ts`
+- Web NFC langsung di `NFCScanUI`
+- QR image via `api.qrserver.com`
 
 ### Urutan Pengerjaan V8
 
 | # | Langkah | Status |
 | :--- | :--- | :--- |
-| 1 | Schema - tabel `qr_token` + migration | Belum |
-| 2 | API - POST generate QR | Belum |
-| 3 | API - GET validate token | Belum |
-| 4 | API - POST scan-register + guard hp_nfc | Belum |
-| 5 | Halaman scan publik + Web NFC integration | Belum |
-| 6 | Komponen QRGenerator | Belum |
-| 7 | Komponen NFCScanUI + ScanResult | Belum |
-| 8 | Utility lib/nfc.ts + lib/qr.ts | Belum |
-| 9 | Update program detail - button Generate QR | Belum |
-| 10 | PWA manifest + service worker (optional) | Belum |
-| 11 | Testing - generate QR, scan, tap kartu HP | Belum |
-| 12 | Docs - panduan petugas | Belum |
-| 13 | Build & verifikasi | Belum |
+| 1 | Schema - tabel `qr_token` + migration | Selesai |
+| 2 | API - POST generate QR | Selesai |
+| 3 | API - GET validate token | Selesai |
+| 4 | API - POST scan-register + guard hp_nfc | Selesai |
+| 5 | Halaman scan publik + Web NFC integration | Selesai |
+| 6 | Komponen QRGenerator | Selesai |
+| 7 | Komponen NFCScanUI + hasil scan | Selesai |
+| 8 | Public lookup KTP via QR token | Selesai |
+| 9 | Update program detail - button Generate QR | Selesai |
+| 10 | PWA manifest + service worker (optional) | Ditunda |
+| 11 | Testing - generate QR, scan, tap kartu HP | Selesai (build/lint; NFC butuh HP HTTPS) |
+| 12 | Docs - panduan petugas | Selesai |
+| 13 | Build & verifikasi | Selesai |
 
 ### Keputusan Desain V8
 
