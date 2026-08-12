@@ -21,6 +21,7 @@ function getCurrentPeriode(reset: PeriodeReset): string {
 
 async function main() {
   // Bersihkan data lama (urutan FK)
+  await prisma.qRToken.deleteMany();
   await prisma.pesertaFieldValueLokaID.deleteMany();
   await prisma.dependentLokaID.deleteMany();
   await prisma.programFieldLokaID.deleteMany();
