@@ -6,6 +6,14 @@ import { validateScanMethod } from "@/lib/scan-guard";
 
 const schema = z.object({ cabang_id: z.coerce.number().int().positive().optional() });
 
+function getPublicOrigin(request: Request) {
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const host = forwardedHost ?? request.headers.get("host");
+  if (host) return `${forwardedProto ?? "https"}://${host}`;
+  return new URL(request.url).origin;
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.mitraId) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -42,7 +50,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     },
   });
 
-  const url = new URL(request.url);
-  const scanUrl = `${url.origin}/scan/${qr.token}`;
+  const scanUrl = `${getPublicOrigin(request)}/scan/${qr.token}`;
   return Response.json({ status: "ok", token: qr.token, scan_url: scanUrl, expires_at: qr.expiresAt });
 }
