@@ -13,19 +13,25 @@ export function QRGenerator({ programId }: { programId: number }) {
   async function generate() {
     setPending(true);
     setError(null);
-    const res = await fetch(`/api/lokaid/program/${programId}/qr`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    setPending(false);
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      setError(data?.error ?? "Gagal generate QR.");
-      return;
+    try {
+      const res = await fetch(`/api/lokaid/program/${programId}/qr`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (!res.ok) {
+        setError(data?.error ?? `Gagal generate QR. HTTP ${res.status}`);
+        return;
+      }
+      setScanUrl(data.scan_url);
+      setExpiresAt(data.expires_at);
+    } catch (e) {
+      setError(e instanceof Error ? `Gagal generate QR: ${e.message}` : "Gagal generate QR karena koneksi bermasalah.");
+    } finally {
+      setPending(false);
     }
-    setScanUrl(data.scan_url);
-    setExpiresAt(data.expires_at);
   }
 
   async function copy() {
