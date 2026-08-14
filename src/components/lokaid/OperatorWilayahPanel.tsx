@@ -113,7 +113,7 @@ function BuatAkunDialog({ wilayahId, onDone }: { wilayahId: number; onDone: () =
         <form onSubmit={submit} className="space-y-3">
           <div className="space-y-1">
             <Label>Username *</Label>
-            <Input name="username" required minLength={3} placeholder="sukasari" className="font-mono" />
+            <Input name="username" required minLength={3} placeholder="patehan" className="font-mono" />
           </div>
           <div className="space-y-1">
             <Label>Password *</Label>

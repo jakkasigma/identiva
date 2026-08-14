@@ -138,43 +138,43 @@ async function main() {
   await prisma.scanPending.create({ data: { cabangId: fatmawati.id, uidKartu: "Y5Z6A7B8" } });
 
   // ════════════════════════════════════════
-  // MITRA 2 — Kelurahan Sukamakmur (tipe: lokaid)
+  // MITRA 2 — LokaID (tipe: lokaid)
   // ════════════════════════════════════════
-  const kelurahan = await prisma.mitra.create({
+  const lokaidMitra = await prisma.mitra.create({
     data: {
-      nama: "Kelurahan Sukamakmur",
-      kode: "LKID-SKMKR-001",
+      nama: "LokaID",
+      kode: "LKID-001",
       skala: "kecil",
       jenisLayanan: "Layanan Masyarakat",
       tipeMitra: "lokaid",
       status: StatusMitra.aktif,
-      tokenApi: "tok_kelurahan_skmkr_2026_k1e2l3u4",
+      tokenApi: "tok_lokaid_2026_main001",
       saldoDefault: 0,
       metodeScanDiizinkan: ["alat_esp32", "hp_nfc"],
     },
   });
 
-  await prisma.user.create({ data: { username: "kelurahan", passwordHash: hash, role: Role.admin_mitra, mitraId: kelurahan.id } });
+  await prisma.user.create({ data: { username: "lokaid", passwordHash: hash, role: Role.admin_mitra, mitraId: lokaidMitra.id } });
 
-  // ── Wilayah LokaID ──
+  // ── Wilayah LokaID — Kelurahan di Kec. Kraton, Yogyakarta ──
   const wilayahData = [
-    { nama: "Kecamatan Sukasari",  kode: "LKID-SKMKR-WIL-01", alamat: "Jl. Sukasari No. 1",  tokenApi: "tok_wil_sukasari_2026_w1i2l3a4" },
-    { nama: "Kecamatan Coblong",   kode: "LKID-SKMKR-WIL-02", alamat: "Jl. Coblong No. 5",   tokenApi: "tok_wil_coblong_2026_c5o6b7l8" },
+    { nama: "Kelurahan Patehan",   kode: "LKID-PTH-001", alamat: "Jl. KH. Ahmad Dahlan No. 1, Patehan, Kraton, Yogyakarta",  tokenApi: "tok_wil_patehan_2026_p1a2t3e4" },
+    { nama: "Kelurahan Kadipaten", kode: "LKID-KDP-002", alamat: "Jl. Kadipaten No. 5, Kadipaten, Kraton, Yogyakarta",        tokenApi: "tok_wil_kadipaten_2026_k5a6d7i8" },
   ];
   const wilayahRecords: { id: number; nama: string; tokenApi: string }[] = [];
   for (const w of wilayahData) {
-    const wil = await prisma.cabang.create({ data: { ...w, status: StatusMitra.aktif, mitraId: kelurahan.id, metodeScanAktif: "hp_nfc" } });
+    const wil = await prisma.cabang.create({ data: { ...w, status: StatusMitra.aktif, mitraId: lokaidMitra.id, metodeScanAktif: "hp_nfc" } });
     wilayahRecords.push({ id: wil.id, nama: wil.nama, tokenApi: wil.tokenApi });
   }
-  const [wilSukasari, wilCoblong] = wilayahRecords;
+  const [wilPatehan, wilKadipaten] = wilayahRecords;
 
   // User per wilayah
-  await prisma.user.create({ data: { username: "sukasari", passwordHash: hash, role: Role.admin_cabang, mitraId: kelurahan.id, cabangId: wilSukasari.id } });
-  await prisma.user.create({ data: { username: "coblong",  passwordHash: hash, role: Role.admin_cabang, mitraId: kelurahan.id, cabangId: wilCoblong.id  } });
+  await prisma.user.create({ data: { username: "patehan",   passwordHash: hash, role: Role.admin_cabang, mitraId: lokaidMitra.id, cabangId: wilPatehan.id } });
+  await prisma.user.create({ data: { username: "kadipaten", passwordHash: hash, role: Role.admin_cabang, mitraId: lokaidMitra.id, cabangId: wilKadipaten.id  } });
 
   // ── Program LokaID — 5 tujuan berbeda ──
 
-  // 1. BANTUAN — Distribusi sembako (program wilayah Sukasari)
+  // 1. BANTUAN — Distribusi sembako (program wilayah Patehan)
   const progSembako = await prisma.programLokaID.create({
     data: {
       nama: "Bantuan Sembako Agustus",
@@ -184,8 +184,8 @@ async function main() {
       periodeReset: PeriodeReset.bulanan,
       perluVerifikasi: false,
       status: "aktif",
-      mitraId: kelurahan.id,
-      cabangId: wilSukasari.id,
+      mitraId: lokaidMitra.id,
+      cabangId: wilPatehan.id,
       tanggalMulai: new Date("2026-08-01"),
       tanggalSelesai: new Date("2026-08-31"),
     },
@@ -197,7 +197,7 @@ async function main() {
     ],
   });
 
-  // 2. KEGIATAN — Posyandu (program wilayah Sukasari, sasaran anak)
+  // 2. KEGIATAN — Posyandu (program wilayah Patehan, sasaran anak)
   const progPosyandu = await prisma.programLokaID.create({
     data: {
       nama: "Posyandu Balita Agustus",
@@ -208,8 +208,8 @@ async function main() {
       periodeReset: PeriodeReset.bulanan,
       perluVerifikasi: false,
       status: "aktif",
-      mitraId: kelurahan.id,
-      cabangId: wilSukasari.id,
+      mitraId: lokaidMitra.id,
+      cabangId: wilPatehan.id,
       tanggalMulai: new Date("2026-08-15"),
       tanggalSelesai: new Date("2026-08-15"),
     },
@@ -230,7 +230,7 @@ async function main() {
     ],
   });
 
-  // 3. PENDATAAN — UMKM (program wilayah Coblong)
+  // 3. PENDATAAN — UMKM (program wilayah Kadipaten)
   const progUMKM = await prisma.programLokaID.create({
     data: {
       nama: "Pendataan UMKM 2026",
@@ -240,8 +240,8 @@ async function main() {
       periodeReset: PeriodeReset.bulanan,
       perluVerifikasi: true,
       status: "aktif",
-      mitraId: kelurahan.id,
-      cabangId: wilCoblong.id,
+      mitraId: lokaidMitra.id,
+      cabangId: wilKadipaten.id,
     },
   });
   await prisma.programAktivitasLokaID.createMany({
@@ -251,7 +251,7 @@ async function main() {
     ],
   });
 
-  // 4. PEMINJAMAN — Alat olahraga (program wilayah Coblong)
+  // 4. PEMINJAMAN — Alat olahraga (program wilayah Kadipaten)
   const progPeminjaman = await prisma.programLokaID.create({
     data: {
       nama: "Peminjaman Alat Olahraga",
@@ -261,8 +261,8 @@ async function main() {
       periodeReset: PeriodeReset.harian,
       perluVerifikasi: true,
       status: "aktif",
-      mitraId: kelurahan.id,
-      cabangId: wilCoblong.id,
+      mitraId: lokaidMitra.id,
+      cabangId: wilKadipaten.id,
     },
   });
   await prisma.programAktivitasLokaID.createMany({
@@ -284,7 +284,7 @@ async function main() {
       periodeReset: PeriodeReset.bulanan,
       perluVerifikasi: true,
       status: "aktif",
-      mitraId: kelurahan.id,
+      mitraId: lokaidMitra.id,
       cabangId: null,
     },
   });
@@ -298,17 +298,17 @@ async function main() {
 
   // ── Peserta LokaID ──
 
-  // Sembako: semua 6 penduduk (wilayah Sukasari)
+  // Sembako: semua 6 penduduk (wilayah Patehan)
   const pesertaSembako: { id: number; pendudukId: number }[] = [];
   for (const p of pendudukRecords) {
-    const ps = await prisma.pesertaLokaID.create({ data: { pendudukId: p.id, programId: progSembako.id, status: "aktif", cabangId: wilSukasari.id } });
+    const ps = await prisma.pesertaLokaID.create({ data: { pendudukId: p.id, programId: progSembako.id, status: "aktif", cabangId: wilPatehan.id } });
     pesertaSembako.push({ id: ps.id, pendudukId: p.id });
   }
 
-  // Posyandu: 4 peserta (wali, wilayah Sukasari)
+  // Posyandu: 4 peserta (wali, wilayah Patehan)
   const pesertaPosyandu: { id: number }[] = [];
   for (let i = 0; i < 4; i++) {
-    const pp = await prisma.pesertaLokaID.create({ data: { pendudukId: pendudukRecords[i].id, programId: progPosyandu.id, status: "aktif", cabangId: wilSukasari.id } });
+    const pp = await prisma.pesertaLokaID.create({ data: { pendudukId: pendudukRecords[i].id, programId: progPosyandu.id, status: "aktif", cabangId: wilPatehan.id } });
     pesertaPosyandu.push({ id: pp.id });
   }
 
@@ -339,10 +339,10 @@ async function main() {
     orderBy: { urutan: "asc" },
   });
 
-  // UMKM: 3 peserta (wilayah Coblong)
+  // UMKM: 3 peserta (wilayah Kadipaten)
   const pesertaUMKM: { id: number }[] = [];
   for (let i = 0; i < 3; i++) {
-    const pu = await prisma.pesertaLokaID.create({ data: { pendudukId: pendudukRecords[i + 3].id, programId: progUMKM.id, status: "aktif", cabangId: wilCoblong.id } });
+    const pu = await prisma.pesertaLokaID.create({ data: { pendudukId: pendudukRecords[i + 3].id, programId: progUMKM.id, status: "aktif", cabangId: wilKadipaten.id } });
     pesertaUMKM.push({ id: pu.id });
   }
 
@@ -371,7 +371,7 @@ async function main() {
 
   for (const a of aktData) {
     await prisma.aktivitasLokaID.create({
-      data: { pesertaId: a.pesertaId, programId: a.programId, mitraId: kelurahan.id, jenis: a.jenis, keterangan: a.keterangan, waktu: a.waktu, dependentId: a.dependentId ?? null },
+      data: { pesertaId: a.pesertaId, programId: a.programId, mitraId: lokaidMitra.id, jenis: a.jenis, keterangan: a.keterangan, waktu: a.waktu, dependentId: a.dependentId ?? null },
     });
   }
 
@@ -441,12 +441,12 @@ async function main() {
   console.log(`  Token Sudirman  : ${sudirman.tokenApi}`);
   console.log(`  Token Kemang    : ${kemang.tokenApi}`);
   console.log("");
-  console.log("  ── LokaID — Kelurahan Sukamakmur ──");
-  console.log("  Login induk    : kelurahan / mitra123");
-  console.log("  Login wilayah  : sukasari | coblong / mitra123");
-  console.log(`  Token induk    : ${kelurahan.tokenApi}`);
-  console.log(`  Token Sukasari : ${wilSukasari.tokenApi}`);
-  console.log(`  Token Coblong  : ${wilCoblong.tokenApi}`);
+  console.log("  ── LokaID (Kec. Kraton, Yogyakarta) ──");
+  console.log("  Login induk    : lokaid / mitra123");
+  console.log("  Login wilayah  : patehan | kadipaten / mitra123");
+  console.log(`  Token induk    : ${lokaidMitra.tokenApi}`);
+  console.log(`  Token Patehan  : ${wilPatehan.tokenApi}`);
+  console.log(`  Token Kadipaten: ${wilKadipaten.tokenApi}`);
 }
 
 main()
