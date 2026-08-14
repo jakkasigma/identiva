@@ -1,5 +1,76 @@
 # LokaID — Dynamic Local Citizen Service Platform
 
+## Ringkasan Eksekutif
+
+**LokaID** adalah platform layanan masyarakat lokal berbasis identitas digital di dalam ekosistem **Identiva**. LokaID membantu kelurahan, desa, komunitas, dan unit layanan lokal membuat program seperti Posyandu, Bansos, Pendataan UMKM, Peminjaman Fasilitas, dan kegiatan masyarakat lain tanpa membangun aplikasi baru dari awal.
+
+LokaID tidak diposisikan sebagai aplikasi tunggal yang hardcoded. LokaID diposisikan sebagai **Dynamic Program Builder**: admin menjawab kebutuhan program melalui wizard, lalu sistem membentuk konfigurasi program berupa sasaran, data tambahan, aktivitas, workflow dasar, wilayah, dan metode scan.
+
+Implementasi saat ini sudah mencakup fondasi utama:
+
+- Program Wizard.
+- Multi-aktivitas per program.
+- Form Builder dasar.
+- Relasi wali-anak untuk Posyandu.
+- Hierarki LokaID induk dan wilayah/kecamatan.
+- Operator wilayah.
+- Pendaftaran peserta cerdas dari data `Penduduk` pusat.
+- Scan ESP32, HP NFC via QR, dan manual.
+
+Pengembangan lanjutan yang masih menjadi roadmap:
+
+- Dynamic Question Engine penuh berbasis rule.
+- Workflow Engine generik berbasis urutan/graph.
+- Device Monitoring online/offline.
+- Report Builder generik.
+- PWA offline queue untuk lapangan.
+- Kontrol privasi dan audit log lebih kuat untuk data sensitif.
+
+> **Status dokumen:** dokumen ini adalah visi produk LokaID. Tidak semua konsep di dalamnya sudah menjadi fitur final. Bagian yang sudah diimplementasikan, parsial, dan future diringkas pada tabel status implementasi berikut.
+
+## Status Implementasi Saat Ini
+
+| Modul | Status | Catatan |
+| :--- | :--- | :--- |
+| Program Wizard | Sudah | Fondasi Dynamic Program Builder |
+| Multi-aktivitas | Sudah | Aktivitas fixed set seperti check-in, distribusi, pengajuan, persetujuan, pengembalian |
+| Dashboard program adaptif | Sudah | Tampilan menyesuaikan `tujuan` program |
+| Form Builder | Sudah | Field dasar: text, number, date, dropdown, radio, checkbox |
+| Relasi wali-anak | Sudah | Mendukung Posyandu Balita dan program anak |
+| Wilayah/kecamatan | Sudah | Secara teknis memakai model `Cabang`, di UI disebut Wilayah |
+| Operator wilayah | Sudah | Admin induk dapat membuat/reset/nonaktifkan operator |
+| HP NFC via QR | Sudah | Butuh HTTPS dan Chrome Android |
+| Dynamic Question Engine | Parsial | Wizard belum rule engine penuh |
+| Workflow Engine generik | Parsial | Multi-aktivitas sudah ada, graph workflow belum ada |
+| Device Monitoring | Future | Belum monitoring online/offline perangkat penuh |
+| Report Builder generik | Future | Aktivitas dan statistik ada, builder laporan belum penuh |
+| Field file/image/location | Future | Belum menjadi tipe khusus di Form Builder |
+
+## Posisi LokaID dalam Identiva
+
+```text
+IDENTIVA
+  ├── Identitas warga pusat
+  ├── Multi-tenant platform
+  ├── Admin platform
+  └── Mitra/produk
+        ├── SPBU/Subsidi
+        └── LokaID/Layanan Lokal
+```
+
+| Layer | Fungsi |
+| :--- | :--- |
+| Identiva | Identitas pusat, multi-tenant, kontrol platform |
+| LokaID | Program lokal, peserta, aktivitas, wilayah, form, workflow dasar |
+| Wilayah | Unit operasional lapangan seperti kecamatan/kelurahan/unit layanan |
+| Warga | Pemilik identitas/Citizen ID yang ikut program |
+
+Kalimat positioning utama:
+
+> **Identiva menyediakan identitas. LokaID menjalankan program lokal.**
+
+---
+
 ## 1. Gambaran Umum
 
 **LokaID** merupakan salah satu mitra yang berada di dalam ekosistem **Identiva**. LokaID berfokus pada digitalisasi pendataan, program, dan layanan masyarakat dalam skala lokal seperti kelurahan, desa, komunitas, fasilitas masyarakat, dan wilayah pelayanan tertentu.

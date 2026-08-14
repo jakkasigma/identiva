@@ -163,7 +163,7 @@ async function main() {
   ];
   const wilayahRecords: { id: number; nama: string; tokenApi: string }[] = [];
   for (const w of wilayahData) {
-    const wil = await prisma.cabang.create({ data: { ...w, status: StatusMitra.aktif, mitraId: lokaidMitra.id, metodeScanAktif: "hp_nfc" } });
+    const wil = await prisma.cabang.create({ data: { ...w, status: StatusMitra.aktif, mitraId: lokaidMitra.id, metodeScanAktif: "alat_esp32" } });
     wilayahRecords.push({ id: wil.id, nama: wil.nama, tokenApi: wil.tokenApi });
   }
   const [wilPatehan, wilKadipaten] = wilayahRecords;
@@ -171,6 +171,10 @@ async function main() {
   // User per wilayah
   await prisma.user.create({ data: { username: "patehan",   passwordHash: hash, role: Role.admin_cabang, mitraId: lokaidMitra.id, cabangId: wilPatehan.id } });
   await prisma.user.create({ data: { username: "kadipaten", passwordHash: hash, role: Role.admin_cabang, mitraId: lokaidMitra.id, cabangId: wilKadipaten.id  } });
+
+  // Simulasi scan dari alat ESP32 (perangkat fisik belum ada saat proposal disusun)
+  await prisma.scanPending.create({ data: { cabangId: wilPatehan.id,   uidKartu: "A1B2C3D4" } });
+  await prisma.scanPending.create({ data: { cabangId: wilKadipaten.id, uidKartu: "E5F6G7H8" } });
 
   // ── Program LokaID — 5 tujuan berbeda ──
 

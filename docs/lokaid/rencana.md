@@ -4,6 +4,47 @@ Dokumen ini adalah rencana teknis implementasi mitra **LokaID** di dalam platfor
 
 ---
 
+## RINGKASAN STATUS SAAT INI
+
+LokaID sudah layak sebagai **MVP demo layanan lokal dinamis**. Implementasi saat ini tidak lagi sebatas program/peserta dasar, tetapi sudah mencakup Program Wizard, multi-aktivitas, Form Builder, relasi wali-anak, wilayah, operator wilayah, preferensi scan, dan pendataan mobile via HP NFC.
+
+Ringkasan iterasi:
+
+| Iterasi | Fokus | Status |
+| :--- | :--- | :--- |
+| V1 | MVP program, peserta, aktivitas dasar | Selesai |
+| V2 | Program Wizard, multi-aktivitas, status peserta | Selesai |
+| V3 | Form Builder, relasi wali-anak | Selesai |
+| V4 | Hierarki wilayah/kecamatan | Selesai |
+| V5 | Kelola akun operator wilayah | Selesai |
+| V6 | Pendaftaran peserta cerdas + fix wilayah | Selesai |
+| V7 | Admin platform + preferensi scan | Selesai |
+| V8 | Pendataan mobile HP NFC via QR | Selesai |
+
+Status umum:
+
+| Modul | Status | Catatan |
+| :--- | :--- | :--- |
+| Program Wizard | Sudah | Fondasi Dynamic Program Builder |
+| Multi-aktivitas | Sudah | Aktivitas fixed set |
+| Form Builder | Sudah | Belum support file/image/location |
+| Wali-anak | Sudah | Use case Posyandu |
+| Wilayah | Sudah | Teknis memakai model `Cabang` |
+| Operator wilayah | Sudah | Admin induk kelola operator |
+| HP NFC via QR | Sudah | Butuh HTTPS + Chrome Android |
+| Dynamic Question Engine | Parsial | Wizard belum rule engine penuh |
+| Workflow Engine generik | Parsial | Belum graph workflow |
+| Device Monitoring | Future | Belum monitoring perangkat penuh |
+| Report Builder generik | Future | Belum builder laporan umum |
+
+Fokus demo yang disarankan:
+
+1. **Posyandu Balita** sebagai demo utama.
+2. **Bansos Sembako** sebagai demo pembanding.
+3. Peminjaman fasilitas dan pendataan UMKM cukup menjadi narasi tambahan.
+
+---
+
 ## ITERASI V1 — MVP (Program + Peserta + Aktivitas Dasar)
 
 > **Status: ✅ SELESAI** — Build production sukses, 0 TypeScript error. Migration + seed berhasil.
@@ -352,7 +393,6 @@ API distribusi: `POST /api/lokaid/distribusi`
 > **Status: ✅ SELESAI** — Build production sukses, 0 TypeScript error. Migration + seed berhasil.
 
 ### Latar Belakang
-untu
 V2 sudah bisa buat program dengan tujuan berbeda dan multi-aktivitas. V3 menambahkan dua kapabilitas utama yang membuat LokaID benar-benar **dinamis**:
 1. **Form Builder** — admin definisikan field tambahan per program (BB/TB untuk Posyandu, nama usaha untuk UMKM, dll)
 2. **Relasi wali-anak** — subjek program bisa berupa anak yang diwakili wali (Posyandu balita, dll)
@@ -801,3 +841,46 @@ Petugas Lapangan
 4. Web NFC fallback: input manual jika tidak support
 5. Server-side validation
 6. Offline queue optional via PWA
+
+---
+
+## ROADMAP LANJUTAN SETELAH V8
+
+Roadmap ini bukan syarat MVP demo, tetapi menjadi arah pengembangan agar LokaID benar-benar mendekati visi Dynamic Local Citizen Service Platform.
+
+### Fase 1 — Dokumentasi & Demo
+
+1. Samakan istilah LokaID, Wilayah, Citizen ID, Program Wizard, dan Form Builder di seluruh dokumen.
+2. Buat status implementasi jelas: sudah, parsial, future.
+3. Buat script demo Posyandu Balita dan Bansos Sembako.
+4. Tambahkan batasan teknis seperti Web NFC, privacy, dan offline mode.
+
+### Fase 2 — Stabilitas Produk
+
+1. Buat kamus status per tujuan program agar tidak raw string tersebar.
+2. Tambahkan audit log untuk perubahan data peserta, status, dan field dinamis.
+3. Perkuat validasi Form Builder.
+4. Tambahkan rate limit untuk endpoint scan yang belum punya pembatasan.
+
+### Fase 3 — Engine Generik
+
+1. Dynamic Question Engine penuh berbasis rule.
+2. Workflow Engine berbasis step/graph.
+3. Report Builder generik per program.
+4. Device Registry untuk perangkat ESP32/reader.
+
+### Fase 4 — Operasional Lapangan
+
+1. PWA offline queue untuk scan dan input data.
+2. Device Monitoring online/offline.
+3. Token rotation dan revoke token perangkat.
+4. Kontrol akses data sensitif untuk program anak/kesehatan.
+
+### Prioritas Terdekat
+
+Untuk kebutuhan lomba/demo, prioritas terdekat adalah:
+
+1. Finalisasi narasi Posyandu Balita.
+2. Finalisasi data dummy wali-anak.
+3. Pastikan alur scan HP NFC/QR bisa dijelaskan meskipun testing butuh HTTPS dan HP Android.
+4. Siapkan fallback manual agar demo tetap berjalan bila NFC tidak tersedia.
