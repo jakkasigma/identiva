@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type Program = { id: number; nama: string };
+type Program = { id: number; nama: string; sasaran?: string | null };
 type Penduduk = { id: number; nik: string; nama: string; alamat: string; uidKartu: string };
 type Hasil = {
   kondisi: "baru" | "ada" | "konflik";
@@ -19,6 +19,7 @@ type Hasil = {
   konflikDua: Penduduk[] | null;
   sudahPeserta: boolean | null;
 };
+type DataAnak = { nama: string; tanggalLahir: string; jenisKelamin: string };
 
 export function PesertaLokaIDForm({ programs, uid, scanId }: { programs: Program[]; uid?: string; scanId?: number }) {
   const router = useRouter();
@@ -32,6 +33,13 @@ export function PesertaLokaIDForm({ programs, uid, scanId }: { programs: Program
   const [pakaiTersimpan, setPakaiTersimpan] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // State untuk data anak
+  const [dataAnak, setDataAnak] = useState<DataAnak[]>([{ nama: "", tanggalLahir: "", jenisKelamin: "" }]);
+  
+  // Cek apakah program yang dipilih sasarannya anak
+  const programDipilih = programs.find((p) => String(p.id) === programId);
+  const isProgramAnak = programDipilih?.sasaran === "anak";
 
   const cekKTP = useCallback(async (qNik: string, qUid: string, qProgram: string) => {
     setCekState("loading");
@@ -95,12 +103,35 @@ export function PesertaLokaIDForm({ programs, uid, scanId }: { programs: Program
       setError("Pilih program tujuan dulu.");
       return;
     }
+    
+    // Validasi data anak jika program sasaran anak
+    if (isProgramAnak) {
+      const anakValid = dataAnak.filter((a) => a.nama.trim());
+      if (anakValid.length === 0) {
+        setError("Isi minimal 1 data anak untuk program sasaran anak.");
+        return;
+      }
+    }
+    
     setPending(true);
     setError(null);
     try {
       const body = pendudukAktif
-        ? { penduduk_id: pendudukAktif.id, program_id: Number(programId), scan_pending_id: scanId }
-        : { nik, nama, alamat, uid_kartu: uidKartu, program_id: Number(programId), scan_pending_id: scanId };
+        ? { 
+            penduduk_id: pendudukAktif.id, 
+            program_id: Number(programId), 
+            scan_pending_id: scanId,
+            anak: isProgramAnak ? dataAnak.filter((a) => a.nama.trim()) : undefined,
+          }
+        : { 
+            nik, 
+            nama, 
+            alamat, 
+            uid_kartu: uidKartu, 
+            program_id: Number(programId), 
+            scan_pending_id: scanId,
+            anak: isProgramAnak ? dataAnak.filter((a) => a.nama.trim()) : undefined,
+          };
 
       const res = await fetch("/api/lokaid/peserta", {
         method: "POST",
@@ -115,6 +146,7 @@ export function PesertaLokaIDForm({ programs, uid, scanId }: { programs: Program
       setProgramId("");
       setNama("");
       setAlamat("");
+      setDataAnak([{ nama: "", tanggalLahir: "", jenisKelamin: "" }]);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal menyimpan peserta.");
@@ -220,6 +252,96 @@ export function PesertaLokaIDForm({ programs, uid, scanId }: { programs: Program
                   </Button>
                 </div>
               )}
+              
+              {/* Section Data Anak untuk program sasaran anak */}
+              {isProgramAnak && !hasil.sudahPeserta && (
+                <div className="grid gap-4 border-t pt-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Data Anak yang Didaftarkan</p>
+                    <p className="text-xs text-muted-foreground">
+                      Program ini untuk anak. Isi data anak yang akan didaftarkan ke program.
+                    </p>
+                  </div>
+                  
+                  {dataAnak.map((anak, idx) => (
+                    <div key={idx} className="grid gap-3 rounded-lg border p-4 md:grid-cols-4">
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor={`anak_nama_${idx}`}>Nama Anak *</Label>
+                        <Input
+                          id={`anak_nama_${idx}`}
+                          value={anak.nama}
+                          onChange={(e) => {
+                            const newData = [...dataAnak];
+                            newData[idx].nama = e.target.value;
+                            setDataAnak(newData);
+                          }}
+                          placeholder="Nama lengkap anak"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`anak_tgl_${idx}`}>Tanggal Lahir</Label>
+                        <Input
+                          id={`anak_tgl_${idx}`}
+                          type="date"
+                          value={anak.tanggalLahir}
+                          onChange={(e) => {
+                            const newData = [...dataAnak];
+                            newData[idx].tanggalLahir = e.target.value;
+                            setDataAnak(newData);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`anak_jk_${idx}`}>Jenis Kelamin</Label>
+                        <Select
+                          value={anak.jenisKelamin || ""}
+                          onValueChange={(v) => {
+                            const newData = [...dataAnak];
+                            newData[idx].jenisKelamin = v || "";
+                            setDataAnak(newData);
+                          }}
+                        >
+                          <SelectTrigger id={`anak_jk_${idx}`}>
+                            <SelectValue placeholder="Pilih" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="L">Laki-laki</SelectItem>
+                            <SelectItem value="P">Perempuan</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {dataAnak.length > 1 && (
+                        <div className="flex items-end md:col-span-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setDataAnak(dataAnak.filter((_, i) => i !== idx));
+                            }}
+                          >
+                            Hapus Anak Ini
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDataAnak([...dataAnak, { nama: "", tanggalLahir: "", jenisKelamin: "" }]);
+                      }}
+                    >
+                      + Tambah Anak Lain
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
@@ -231,6 +353,97 @@ export function PesertaLokaIDForm({ programs, uid, scanId }: { programs: Program
                 <Label htmlFor="alamat">Alamat</Label>
                 <Input id="alamat" value={alamat} onChange={(e) => setAlamat(e.target.value)} required placeholder="Alamat lengkap" />
               </div>
+              
+              {/* Section Data Anak untuk program sasaran anak (penduduk baru) */}
+              {isProgramAnak && (
+                <div className="grid gap-4 border-t pt-4 md:col-span-2">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Data Anak yang Didaftarkan</p>
+                    <p className="text-xs text-muted-foreground">
+                      Program ini untuk anak. Isi data anak yang akan didaftarkan ke program.
+                    </p>
+                  </div>
+                  
+                  {dataAnak.map((anak, idx) => (
+                    <div key={idx} className="grid gap-3 rounded-lg border p-4 md:grid-cols-4">
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor={`anak_nama_baru_${idx}`}>Nama Anak *</Label>
+                        <Input
+                          id={`anak_nama_baru_${idx}`}
+                          value={anak.nama}
+                          onChange={(e) => {
+                            const newData = [...dataAnak];
+                            newData[idx].nama = e.target.value;
+                            setDataAnak(newData);
+                          }}
+                          placeholder="Nama lengkap anak"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`anak_tgl_baru_${idx}`}>Tanggal Lahir</Label>
+                        <Input
+                          id={`anak_tgl_baru_${idx}`}
+                          type="date"
+                          value={anak.tanggalLahir}
+                          onChange={(e) => {
+                            const newData = [...dataAnak];
+                            newData[idx].tanggalLahir = e.target.value;
+                            setDataAnak(newData);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`anak_jk_baru_${idx}`}>Jenis Kelamin</Label>
+                        <Select
+                          value={anak.jenisKelamin || ""}
+                          onValueChange={(v) => {
+                            const newData = [...dataAnak];
+                            newData[idx].jenisKelamin = v || "";
+                            setDataAnak(newData);
+                          }}
+                        >
+                          <SelectTrigger id={`anak_jk_baru_${idx}`}>
+                            <SelectValue placeholder="Pilih" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="L">Laki-laki</SelectItem>
+                            <SelectItem value="P">Perempuan</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {dataAnak.length > 1 && (
+                        <div className="flex items-end md:col-span-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setDataAnak(dataAnak.filter((_, i) => i !== idx));
+                            }}
+                          >
+                            Hapus Anak Ini
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDataAnak([...dataAnak, { nama: "", tanggalLahir: "", jenisKelamin: "" }]);
+                      }}
+                    >
+                      + Tambah Anak Lain
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
               <div className="md:col-span-2">
                 <Button type="button" onClick={daftarkan} disabled={pending || !programId}>
                   {pending ? "Menyimpan..." : "Daftarkan Peserta"}

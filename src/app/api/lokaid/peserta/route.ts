@@ -11,6 +11,15 @@ const createSchema = z
     uid_kartu: z.string().min(4).optional(),
     program_id: z.coerce.number().int().positive(),
     scan_pending_id: z.coerce.number().int().optional(),
+    anak: z
+      .array(
+        z.object({
+          nama: z.string().min(2),
+          tanggalLahir: z.string().optional(),
+          jenisKelamin: z.enum(["L", "P"]).optional(),
+        })
+      )
+      .optional(),
   })
   .refine((d) => d.penduduk_id || (d.nik && d.nama && d.alamat && d.uid_kartu), {
     message: "Kirim penduduk_id (KTP sudah ada) atau data lengkap (KTP baru)",
@@ -77,6 +86,20 @@ export async function POST(request: Request) {
       const peserta = await tx.pesertaLokaID.create({
         data: { pendudukId: penduduk.id, programId: program.id, cabangId },
       });
+
+      // Buat dependent (anak) jika program sasaran anak dan data anak dikirim
+      if (body.anak && body.anak.length > 0) {
+        for (const anak of body.anak) {
+          await tx.dependentLokaID.create({
+            data: {
+              waliId: peserta.id,
+              nama: anak.nama,
+              tanggalLahir: anak.tanggalLahir ? new Date(anak.tanggalLahir) : null,
+              jenisKelamin: anak.jenisKelamin ?? null,
+            },
+          });
+        }
+      }
 
       if (body.scan_pending_id) {
         await tx.scanPending.deleteMany({ where: { id: body.scan_pending_id } });
