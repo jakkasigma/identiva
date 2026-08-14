@@ -323,16 +323,18 @@ model ProgramFieldLokaID {
 }
 
 model PesertaFieldValueLokaID {
-  id        Int      @id @default(autoincrement())
-  pesertaId Int      @map("peserta_id")
-  fieldId   Int      @map("field_id")
-  nilai     String?  @db.Text
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id          Int      @id @default(autoincrement())
+  pesertaId   Int      @map("peserta_id")
+  fieldId     Int      @map("field_id")
+  dependentId Int?     @map("dependent_id")
+  nilai       String?  @db.Text
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  peserta PesertaLokaID      @relation(fields: [pesertaId], references: [id])
-  field   ProgramFieldLokaID @relation(fields: [fieldId], references: [id])
+  peserta   PesertaLokaID      @relation(fields: [pesertaId], references: [id], onDelete: Cascade)
+  field     ProgramFieldLokaID @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  dependent DependentLokaID?   @relation(fields: [dependentId], references: [id], onDelete: Cascade)
 
-  @@unique([pesertaId, fieldId])
+  @@unique([pesertaId, fieldId, dependentId])
   @@map("peserta_field_value_lokaid")
 }
 
@@ -344,8 +346,9 @@ model DependentLokaID {
   jenisKelamin String?   @map("jenis_kelamin") @db.VarChar(10)  // "L" | "P"
   keterangan   String?   @db.VarChar(255)
 
-  wali      PesertaLokaID    @relation(fields: [waliId], references: [id])
-  aktivitas AktivitasLokaID[]
+  wali        PesertaLokaID             @relation(fields: [waliId], references: [id])
+  aktivitas   AktivitasLokaID[]
+  fieldValues PesertaFieldValueLokaID[]
 
   createdAt DateTime @default(now()) @map("created_at")
 

@@ -175,8 +175,41 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
       {program.tujuan === "peminjaman" && <PeminjamanView programId={program.id} peserta={peserta} periode={periode} />}
       {program.tujuan === "pendaftaran" && <PendaftaranView programId={program.id} peserta={peserta} periode={periode} />}
 
-      {/* Dialog Isi Data — satu per peserta, lazy load fields via API */}
-      {hasFields && (
+      {/* Dialog Isi Data — untuk program anak: per anak, untuk program warga: per peserta */}
+      {hasFields && program.sasaran === "anak" && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">Isi Data Anak</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {peserta.flatMap((wali) =>
+              (wali.anak || []).map((anak) => {
+                const fieldDefs: FieldDef[] = program.fields.map((f) => ({
+                  fieldId: f.id, nama: f.nama, kode: f.kode, tipe: f.tipe as FieldDef["tipe"],
+                  wajib: f.wajib, opsi: f.opsi ? JSON.parse(f.opsi) as string[] : null,
+                  nilai: null,
+                }));
+                return (
+                  <div key={`${wali.id}-${anak.id}`} className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <div className="font-medium text-sm">{anak.nama}</div>
+                      <div className="text-xs text-muted-foreground">Wali: {wali.nama}</div>
+                    </div>
+                    <Dialog>
+                      <DialogTrigger render={<Button variant="outline" size="sm" />}>Isi Data</DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader><DialogTitle>Data {anak.nama}</DialogTitle></DialogHeader>
+                        <DynamicDataForm pesertaId={wali.id} dependentId={anak.id} fields={fieldDefs} />
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Dialog Isi Data untuk program warga (non-anak) */}
+      {hasFields && program.sasaran !== "anak" && (
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">Isi Data Peserta</p>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -184,7 +217,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
               const fieldDefs: FieldDef[] = program.fields.map((f) => ({
                 fieldId: f.id, nama: f.nama, kode: f.kode, tipe: f.tipe as FieldDef["tipe"],
                 wajib: f.wajib, opsi: f.opsi ? JSON.parse(f.opsi) as string[] : null,
-                nilai: null, // akan diisi saat dialog dibuka
+                nilai: null,
               }));
               return (
                 <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
