@@ -19,11 +19,12 @@ export type FieldDef = {
 
 type Props = {
   pesertaId: number;
+  dependentId?: number;
   fields: FieldDef[];
   onDone?: () => void;
 };
 
-export function DynamicDataForm({ pesertaId, fields, onDone }: Props) {
+export function DynamicDataForm({ pesertaId, dependentId, fields, onDone }: Props) {
   const router = useRouter();
   const [values, setValues] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
@@ -47,7 +48,7 @@ export function DynamicDataForm({ pesertaId, fields, onDone }: Props) {
       const res = await fetch(`/api/lokaid/peserta/${pesertaId}/data`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ values }),
+        body: JSON.stringify({ values, dependentId }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);

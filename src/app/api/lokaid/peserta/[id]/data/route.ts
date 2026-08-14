@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
   values: z.record(z.string(), z.string().nullable()), // { kode: nilai }
+  dependentId: z.coerce.number().int().positive().optional(),
 });
 
 export async function POST(
@@ -28,6 +29,14 @@ export async function POST(
     const body = schema.parse(await request.json());
     const fields = peserta.program.fields;
 
+    if (body.dependentId) {
+      const dependent = await prisma.dependentLokaID.findFirst({
+        where: { id: body.dependentId, waliId: pesertaId },
+        select: { id: true },
+      });
+      if (!dependent) return Response.json({ error: "Data anak tidak ditemukan" }, { status: 404 });
+    }
+
     // Validasi field wajib
     const fieldWajib = fields.filter((f) => f.wajib);
     for (const f of fieldWajib) {
@@ -41,11 +50,21 @@ export async function POST(
     for (const f of fields) {
       const nilai = body.values[f.kode] ?? null;
       if (nilai === null) continue; // skip field yang tidak dikirim
-      await prisma.pesertaFieldValueLokaID.upsert({
-        where: { pesertaId_fieldId: { pesertaId, fieldId: f.id } },
-        update: { nilai, updatedAt: new Date() },
-        create: { pesertaId, fieldId: f.id, nilai, updatedAt: new Date() },
+      const existing = await prisma.pesertaFieldValueLokaID.findFirst({
+        where: { pesertaId, fieldId: f.id, dependentId: body.dependentId ?? null },
+        select: { id: true },
       });
+
+      if (existing) {
+        await prisma.pesertaFieldValueLokaID.update({
+          where: { id: existing.id },
+          data: { nilai, updatedAt: new Date() },
+        });
+      } else {
+        await prisma.pesertaFieldValueLokaID.create({
+          data: { pesertaId, fieldId: f.id, dependentId: body.dependentId ?? null, nilai, updatedAt: new Date() },
+        });
+      }
     }
 
     // Log aktivitas pendataan
@@ -54,6 +73,7 @@ export async function POST(
         pesertaId,
         programId: peserta.programId,
         mitraId: session.user.mitraId,
+        dependentId: body.dependentId ?? null,
         jenis: "pendataan",
         keterangan: "Data diisi via dashboard",
       },
@@ -68,7 +88,7 @@ export async function POST(
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
@@ -77,6 +97,11 @@ export async function GET(
   const { id } = await params;
   const pesertaId = Number(id);
   if (isNaN(pesertaId)) return Response.json({ error: "ID tidak valid" }, { status: 400 });
+
+  const { searchParams } = new URL(request.url);
+  const dependentIdParam = searchParams.get("dependent_id");
+  const dependentId = dependentIdParam ? Number(dependentIdParam) : null;
+  if (dependentIdParam && isNaN(dependentId!)) return Response.json({ error: "ID anak tidak valid" }, { status: 400 });
 
   const peserta = await prisma.pesertaLokaID.findFirst({
     where: { id: pesertaId, program: { mitraId: session.user.mitraId } },
@@ -87,9 +112,17 @@ export async function GET(
   });
   if (!peserta) return Response.json({ error: "Peserta tidak ditemukan" }, { status: 404 });
 
+  if (dependentId) {
+    const dependent = await prisma.dependentLokaID.findFirst({
+      where: { id: dependentId, waliId: pesertaId },
+      select: { id: true },
+    });
+    if (!dependent) return Response.json({ error: "Data anak tidak ditemukan" }, { status: 404 });
+  }
+
   // Gabungkan definisi field + nilai yang sudah ada
   const data = peserta.program.fields.map((f) => {
-    const val = peserta.fieldValues.find((v) => v.fieldId === f.id);
+    const val = peserta.fieldValues.find((v) => v.fieldId === f.id && (v.dependentId ?? null) === dependentId);
     return {
       fieldId: f.id,
       nama: f.nama,
