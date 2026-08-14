@@ -10,7 +10,7 @@ type Scan = {
   cabang: { nama: string } | null;
 };
 
-type Program = { id: number; nama: string };
+type Program = { id: number; nama: string; sasaran?: string | null };
 
 export function ScanPesertaPanel({ scans, programs }: { scans: Scan[]; programs: Program[] }) {
   if (scans.length === 0) {

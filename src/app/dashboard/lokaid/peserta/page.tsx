@@ -30,7 +30,7 @@ export default async function LokaIDPesertaPage({ searchParams }: PageProps<"/da
 
   const programs = await prisma.programLokaID.findMany({
     where: programWhere,
-    select: { id: true, nama: true, tujuan: true },
+    select: { id: true, nama: true, tujuan: true, sasaran: true },
     orderBy: { nama: "asc" },
   });
 
